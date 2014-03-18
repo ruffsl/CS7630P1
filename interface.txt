@@ -1,0 +1,41 @@
+what class robot takes:
+
+occupancy grid - 2D array of floats
+	0: unoccupied
+	-1: moveable object
+	-2: immoveable object
+	all positive values are pheromones (implies unoccupied)
+
+list of other robots
+	gives x/y location
+
+
+
+
+base functions:
+
+	update
+		pointers to occupancy grid and robot list
+		to be modify
+
+	sense
+
+	move
+		translate
+		rotate
+
+
+parameters:
+
+	position (int x, int y)
+
+	orientation (int degrees)
+
+	load (int objects)
+
+constants:
+
+	max_load
+	max_range
+	max_speed
+
