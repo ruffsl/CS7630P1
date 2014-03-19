@@ -31,7 +31,7 @@ class RobotArch(pygame.sprite.Sprite):
         self.image_original = self.image    #unchanging copy, for rotations
         self.rect           = image.get_rect()
         self.rect_original  = self.rect     #unchanging copy, for rotations
-        self.rect.topleft   = pos_x, pos_y  #for now used only for initial position
+        self.rect.center    = pos_x, pos_y  #for now used only for initial position
         self.fwd_speed      = fwd_speed
         self.spin_speed     = spin_speed
         self.azi            = azimuth       #in degrees
