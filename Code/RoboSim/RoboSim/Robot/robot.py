@@ -12,7 +12,7 @@ class Robot(pygame.sprite.Sprite):
 		pygame.sprite.Sprite.__init__(self)
 		self.point = point
 		self.config = config
-
+		self.collided = False			#Might need to check this attribute before move is called
 
 		self.image  = self.load_image(self.config['r_image'])
 #		if self.config['r_size']:
@@ -30,9 +30,11 @@ class Robot(pygame.sprite.Sprite):
 	def move(self,dx,dy,world):
 		previous_rect = self.rect
 		self.rect = self.rect.move(dx,dy)
-		if self.rect.collidelist(world) != -1:
-			self.rect = previous_rect
+		if world[self.rect.topleft] == -2:		#Check the value in the numpy array for collision
+			self.rect = previous_rect		#Should probably be if world[]>0, just testing behavior
 			self.collided = True
+#		else:							#Commented out only to test behaviors
+#			self.collided = False
 
 
 	def load_image(self, name):

@@ -15,6 +15,7 @@ config = {'fps': 20,
 
 #import everything
 import os
+from RoboSim.Robot import exper_robot
 from RoboSim.Robot import robot
 from RoboSim import sim
 
@@ -23,13 +24,15 @@ from RoboSim import sim
 ###########################################
 def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
-	myRobot = robot.Robot((500,500), config)
+#	myRobot = robot.Robot((500,500), config)
+	myRobot = exper_robot.exper_robot((900,500), config)
 	robots = [myRobot]
 	mainSim = sim.sim(robots, config)
 
 	going = True
 	while going:
 		going = mainSim.update()
+		myRobot.test_behavior(mainSim.world)
 	mainSim.quit() #also calls display.quit()
 
 if __name__ == '__main__':
