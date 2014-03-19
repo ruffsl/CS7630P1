@@ -23,7 +23,7 @@ class Robot(pygame.sprite.Sprite):
 		self.rect = self.image.get_rect()
 		self.rect.topleft = point
 
-	def update(self):
+	def update(self, world, robots):
 		return None
 
 

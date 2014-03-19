@@ -37,6 +37,7 @@ class sim:
 		world = np.zeros(world_size)
 		surface = int((world_size[1]/10.0)*4)
 		world[:,surface:-1] = -1
+#		world[0:surface,0:surface] = -1
 		world[ :, 0] = -2
 		world[ :,-1] = -2
 		world[ 0, :] = -2
@@ -48,8 +49,8 @@ class sim:
 
 		mask_shape = [self.world.shape[0], self.world.shape[1], 4]
 		mask = np.zeros(mask_shape, dtype=np.uint8)
-		mask[np.where(self.world.T == -1)] = [36,16,4,200]
-		mask = Image.fromarray(mask)
+		mask[np.where(self.world == -1)] = [36,16,4,220]
+		mask = Image.fromarray(mask).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90)
 		world.paste(mask, (0, 0, self.world.shape[0], self.world.shape[1]), mask)
 		world = np.asarray(world)[...,0:3]
 
@@ -58,7 +59,7 @@ class sim:
 		self.screen.blit(self.b_image, (0, 0))
 		self.allrobots.draw(self.screen)
 
-		self.allrobots.update()
+		self.allrobots.update(self.world, self.robots)
 		pygame.display.flip()
 
 	def update(self):

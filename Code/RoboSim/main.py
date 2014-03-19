@@ -24,7 +24,7 @@ from RoboSim import sim2
 def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 	myRobot = robot2.Robot((500,500), config)
-	robots = (myRobot)
+	robots = [myRobot]
 	mainSim = sim2.sim(robots, config)
 
 	going = True
