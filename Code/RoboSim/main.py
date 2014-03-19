@@ -15,17 +15,17 @@ config = {'fps': 20,
 
 #import everything
 import os
-from RoboSim.Robot import robot2
-from RoboSim import sim2
+from RoboSim.Robot import robot
+from RoboSim import sim
 
 
 ###########################################
 ###########################################
 def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
-	myRobot = robot2.Robot((500,500), config)
+	myRobot = robot.Robot((500,500), config)
 	robots = [myRobot]
-	mainSim = sim2.sim(robots, config)
+	mainSim = sim.sim(robots, config)
 
 	going = True
 	while going:
