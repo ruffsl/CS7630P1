@@ -26,7 +26,7 @@ Send your questions to agapie@tarleton.edu
 
 
 
-    Copyright (C) 2013 Mircea Agapie 
+    Copyright (C) 2013 Mircea Agapie
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ leave_trace         = 0         #default mode is not to leave traces
 color_of_nothing    = 'white'
 sim_version         = 'RoboSim v.19'
 
-r_image          = 'robo2.bmp'  #must have this file in same dir.
+r_image          = 'robo1.bmp'  #must have this file in same dir.
 r_edge           = 51       #edge of square surrounding robot (in pixels)
 r_init_azi       = 0        #azimuth, in degrees (up is 0)
 r_init_x_topleft = 10       #must be >= wall_thickness
@@ -204,12 +204,12 @@ class Robot(pygame.sprite.Sprite):
         typically called once per frame. IMPORTANT: All actions in
         here execute AFTER the ones called directly in the event loop.
         """
-        if   (self.opmode == 0): self.mode_0_tele()     #teleop mode    
+        if   (self.opmode == 0): self.mode_0_tele()     #teleop mode
         elif (self.opmode == 1): self.mode_1_walk()     #RW (random walk)
         elif (self.opmode == 2): self.mode_2_auto()     #autonomous
         else:
             print 'ERROR! Undefined operation mode!'
-            
+
     def mode_0_tele(self):
         #self.sense()       #no sensing here, it's done only at keypress
         if self.collided:
@@ -232,7 +232,7 @@ class Robot(pygame.sprite.Sprite):
                     else:
                         sign = -1
                     self.spin(sign*self.spin_speed)
-                    self.spin_angle_left = walk_dazi-sign*self.spin_speed                
+                    self.spin_angle_left = walk_dazi-sign*self.spin_speed
         else:                   #not collided --> finish SPIN, or MOVE fwd
             if math.fabs(self.spin_angle_left) > 0:     #must finish SPIN
                 if math.fabs(self.spin_angle_left) <= self.spin_speed:    #can spin in 1 cycle
@@ -244,7 +244,7 @@ class Robot(pygame.sprite.Sprite):
                     else:
                         sign = -1
                     self.spin(sign*self.spin_speed)
-                    self.spin_angle_left -= sign*self.spin_speed 
+                    self.spin_angle_left -= sign*self.spin_speed
             else:                            #MOVE fwd
                 #calculate displacements based on azimuth and speed
                 temp_unghi = self.azi*math.pi/180
@@ -269,7 +269,7 @@ class Robot(pygame.sprite.Sprite):
                     else:
                         sign = -1
                     self.spin(sign*self.spin_speed)
-                    self.spin_angle_left = walk_dazi-sign*self.spin_speed                
+                    self.spin_angle_left = walk_dazi-sign*self.spin_speed
         else:                   #not collided --> finish SPIN, or MOVE fwd
             if math.fabs(self.spin_angle_left) > 0:     #must finish SPIN
                 if math.fabs(self.spin_angle_left) <= self.spin_speed:    #can spin in 1 cycle
@@ -281,7 +281,7 @@ class Robot(pygame.sprite.Sprite):
                     else:
                         sign = -1
                     self.spin(sign*self.spin_speed)
-                    self.spin_angle_left -= sign*self.spin_speed 
+                    self.spin_angle_left -= sign*self.spin_speed
             else:               #MOVE fwd
                 #calculate displacements based on azimuth and speed
                 temp_unghi = self.azi*math.pi/180
@@ -289,7 +289,7 @@ class Robot(pygame.sprite.Sprite):
                 walk_dy = -self.fwd_speed*math.cos(temp_unghi)
                 self.move(walk_dx, walk_dy)
     ########end mode_2_auto(self)########
-        
+
     def move(self,dx,dy):
         previous_rect = self.rect           #remember in case undo is necessary
         self.rect = self.rect.move(dx,dy)
@@ -302,7 +302,7 @@ class Robot(pygame.sprite.Sprite):
             if leave_trace:     #update trace list
                 tr = self.rect.inflate(trace_decrease, trace_decrease)
                 list_traces.append(Trace(tr, 90+self.azi-trace_arc, 90+self.azi+trace_arc))
-    """           
+    """
     def spin(self,dtheta):
         center = self.rect.center
         self.azi += dtheta
@@ -339,7 +339,7 @@ class Robot(pygame.sprite.Sprite):
         if leave_trace:     #update trace list
             tr = self.rect.inflate(trace_decrease, trace_decrease)
             list_traces.append(Trace(tr, 90+self.azi-trace_arc, 90+self.azi+trace))
-    
+
     #this function's job is to place in self.retina the range sensed by each sensor
     def sense(self):
         n = (self.nr_sensors - 1)/2     #the "natural" sensor range is -n to +n
@@ -366,7 +366,7 @@ class Robot(pygame.sprite.Sprite):
                 self.retina[i+n][1] = pygame.Color(color_of_nothing)
         #print 'sense -->retina is:\n', self.retina
         self.printRetina()
-          
+
     def draw_rays(self, target_surf):
         n = (self.nr_sensors - 1)/2 #the "natural" sensor range -n to +n
         for i in range(-n,n+1):     #draw the 2n+1 rays of the range sensors
@@ -380,7 +380,7 @@ class Robot(pygame.sprite.Sprite):
 def load_image(name):
     path = os.path.join(main_dir, name)
     temp_image = pygame.image.load(path).convert_alpha()  #need this if using ppalpha
-    return change_alpha_for_white(temp_image, r_transparency)  
+    return change_alpha_for_white(temp_image, r_transparency)
 
 ###########################################
 ###########################################
@@ -392,7 +392,7 @@ def main():
     if r_init_x_topleft<wall_thickness or r_init_y_topleft<wall_thickness:
         print 'PARAMETER ERROR: starting position overlaps wall!'
         print 'Check r_init_x|y_topleft and wall_thickness'
-    pygame.init()           #also calls display.init()    
+    pygame.init()           #also calls display.init()
     pygame.display.set_caption(sim_version + ' \tmode: teleoperation')
     r_sprite = load_image(r_image)
     background  = load_image(back_image)
@@ -410,13 +410,13 @@ def main():
         count = count + 1
         s = pygame.display.get_surface()
         s.fill(ob.color, list_rect_obstacles[count])
-    r.draw_rays(screen)  
-    pygame.display.flip()   
+    r.draw_rays(screen)
+    pygame.display.flip()
 
     going = True
     while going:
         clock.tick(fps)      #at most that many fps
-        
+
         #Event loop################################
         for event in pygame.event.get():
             if event == QUIT:
@@ -426,7 +426,7 @@ def main():
                     going = False
                 if event.key == K_r:        #r is for rotation
                     r.spin(-r_step_theta)   #clockwise
-                    r.sense()       #do it here, to avoid fast scrolling when teleoperating 
+                    r.sense()       #do it here, to avoid fast scrolling when teleoperating
                 if event.key == K_e:        #e is next to r
                     r.spin(r_step_theta)    #counterclockwise
                     r.sense()
@@ -442,7 +442,7 @@ def main():
                 if event.key == K_DOWN:
                     r.move(0,r_step_tele)
                     r.sense()
-               
+
                 if event.key == K_SPACE:
                     r.opmode = 0            #teleop mode
                     pygame.display.set_caption(sim_version + ' \tmode: teleoperation')
@@ -461,8 +461,8 @@ def main():
                         leave_trace = 1
                         print 'changing leave_trace from 0 to 1'
         #End of event loop#######################
-                        
-        #Redrawing    
+
+        #Redrawing
         allsprites.update()
         screen.blit(background, (0, 0))  #redraws the entire bkgrnd.
         #screen.fill((255,255,255)) # white background
@@ -476,7 +476,7 @@ def main():
         draw_traces(screen)
         allsprites.draw(screen)
 
-        
+
         #pygame.display.update()
         pygame.display.flip()   #all changes are drawn at once (double buffer)
         #pygame.time.delay(100)
@@ -486,5 +486,5 @@ def main():
 if __name__ == '__main__':
     main()
 
-        
+
 
