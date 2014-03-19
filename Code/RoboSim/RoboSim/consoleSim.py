@@ -12,7 +12,6 @@ class Map:
 		print "\n"
 		
 
-		
 #Just for testing
 temp_size = [10,15]
 temp_map = Map(temp_size)
