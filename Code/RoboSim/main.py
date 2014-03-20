@@ -25,14 +25,14 @@ from RoboSim import sim
 def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 #	myRobot = robot.Robot((500,500), config)
-	myRobot = exper_robot.exper_robot((900,500), config)
+	myRobot = exper_robot.exper_robot((200,350), config)
 	robots = [myRobot]
 	mainSim = sim.sim(robots, config)
 
 	going = True
 	while going:
 		going = mainSim.update()
-		myRobot.test_behavior(mainSim.world)
+		myRobot.behavior(mainSim.world)
 	mainSim.quit() #also calls display.quit()
 
 if __name__ == '__main__':

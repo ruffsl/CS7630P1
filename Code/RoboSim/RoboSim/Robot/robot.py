@@ -13,6 +13,7 @@ class Robot(pygame.sprite.Sprite):
 		self.point = point
 		self.config = config
 		self.collided = False			#Might need to check this attribute before move is called
+		self.load = 0
 
 		self.image  = self.load_image(self.config['r_image'])
 #		if self.config['r_size']:
@@ -21,7 +22,7 @@ class Robot(pygame.sprite.Sprite):
 #			self.screen = pygame.display.set_mode(r_image.get_size())
 
 		self.rect = self.image.get_rect()
-		self.rect.topleft = point
+		self.rect.center = point				#Changed topleft to center
 
 	def update(self, world, robots):
 		return None
@@ -30,12 +31,31 @@ class Robot(pygame.sprite.Sprite):
 	def move(self,dx,dy,world):
 		previous_rect = self.rect
 		self.rect = self.rect.move(dx,dy)
-		if world[self.rect.topleft] == -2:		#Check the value in the numpy array for collision
-			self.rect = previous_rect		#Should probably be if world[]>0, just testing behavior
+		if world[self.rect.center] < 0:		#Check the value in the numpy array for collision
+			self.rect = previous_rect
 			self.collided = True
-#		else:							#Commented out only to test behaviors
-#			self.collided = False
-
+		else:							
+			self.collided = False
+			
+	def grab(self,dx,dy,world):
+		previous_rect = self.rect
+		self.rect = self.rect.move(dx,dy)
+		if world[self.rect.center] == -1:			#Moveable object
+			if self.load < 50:				#If the robot has room
+				self.load = self.load + 1
+				world[self.rect.center] = 0
+				self.collided = False
+			else:
+				self.rect = previous_rect
+				self.collided = True
+		elif world[self.rect.center] == -2:		#Immovable object			
+			self.rect = previous_rect
+			self.collided = True
+		else:								#Nothing there
+			self.collided = False
+			
+	def sense(self, world):
+		
 
 	def load_image(self, name):
 		path = os.path.join(self.config['path'], name)
