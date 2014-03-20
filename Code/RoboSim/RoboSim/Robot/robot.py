@@ -54,7 +54,7 @@ class Robot(pygame.sprite.Sprite):
 		else:								#Nothing there
 			self.collided = False
 			
-	def sense(self, world):
+#	def sense(self, world):
 		
 
 	def load_image(self, name):
