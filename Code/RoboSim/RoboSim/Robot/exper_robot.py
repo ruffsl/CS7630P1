@@ -19,7 +19,7 @@ class exper_robot(robot.Robot):
 			if self.collided == True:
 				self.state = 1
 		elif self.state == 1:
-			self.grab(0,1,world)
+			self.dig(0,1,world)
 			if self.collided == True:
 				self.state = 2
 		elif self.state == 2:

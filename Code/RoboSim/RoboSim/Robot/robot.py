@@ -6,6 +6,7 @@ Created on Tue Mar 18 20:07:06 2014
 """
 
 import os, pygame
+import abc
 
 class Robot(pygame.sprite.Sprite):
 	def __init__(self, point, config):
@@ -23,7 +24,21 @@ class Robot(pygame.sprite.Sprite):
 
 		self.rect = self.image.get_rect()
 		self.rect.center = point				#Changed topleft to center
-
+		
+		self.dig_mask = self.getMask(self.config['dig_range'])
+		self.sense_mask = self.getMask(self.config['sense_range'])
+		
+	def load_image(self, name):
+		path = os.path.join(self.config['path'], name)
+		temp_image = pygame.image.load(path)
+		return temp_image
+	
+	def getMask(self, rad):
+		return None
+	
+#Behave############################################################	
+	
+	@abc.abstractmethod	
 	def update(self, world, robots):
 		return None
 
@@ -37,7 +52,7 @@ class Robot(pygame.sprite.Sprite):
 		else:							
 			self.collided = False
 			
-	def grab(self,dx,dy,world):
+	def dig(self,dx,dy,world):
 		previous_rect = self.rect
 		self.rect = self.rect.move(dx,dy)
 		if world[self.rect.center] == -1:			#Moveable object
@@ -54,10 +69,8 @@ class Robot(pygame.sprite.Sprite):
 		else:								#Nothing there
 			self.collided = False
 			
-#	def sense(self, world):
+	def sense(self, world):
+		return None
 		
-
-	def load_image(self, name):
-		path = os.path.join(self.config['path'], name)
-		temp_image = pygame.image.load(path)
-		return temp_image
+	def drop(self, world):
+		return None
