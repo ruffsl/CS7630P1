@@ -20,6 +20,7 @@ class sim:
 
 		pygame.init()
 		pygame.display.set_caption('Robosim!')
+		pygame.display.set_icon(pygame.image.load(os.path.join(self.config['path'],'logo.png')))
 		self.b_image  = self.load_image(self.config['b_image'])
 		if self.config['b_size']:
 			self.screen = pygame.display.set_mode(self.config['b_size'])
