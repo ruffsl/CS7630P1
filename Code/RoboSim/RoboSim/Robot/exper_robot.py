@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import robot
+import numpy as np
 
 class exper_robot(robot.Robot):
 #	Base class provides
@@ -12,23 +13,50 @@ class exper_robot(robot.Robot):
 	def __init__(self, point, config):
 		robot.Robot.__init__(self, point, config)
 		self.state = 0
+		self.load = 0
+		
+	def update(self, world, robots):
+		self.behavior(world)
+		return None
 	
 	def behavior(self,world):
 		if self.state == 0:
-			self.move(0,1,world)
-			if self.collided == True:
+			if self.load < self.config['max_load']:
+				digs = self.dig(world)
+				print 'Dig dig dig: ', digs
+				self.move(0,1,world)
+			else:
 				self.state = 1
-		elif self.state == 1:
-			self.dig(0,1,world)
-			if self.collided == True:
+				
+		if self.state == 1:
+			if (self.rect.center[1] > 395):
+				self.move(0,-1,world)
+				print "Soo full!!"
+			else:
 				self.state = 2
-		elif self.state == 2:
-			print "The ant is full, stop this madness"
-			
-#		if self.state == 0:
-#			self.state = self.bounce(world)
-#		elif self.state == 1:
-#			self.state = self.stop(world)
+		
+		if self.state == 2:
+			if self.load > 0:
+				drops = np.array([[-1,-5],
+										 [-1,-4],
+										 [-1,-3],
+										 [-1,-2],
+										 [-1,-1],
+										 [-1, 0],
+										 [-1, 1],
+										 [-1, 2],
+										 [-1, 3],
+										 [-1, 4],
+										 [-1, 5]])
+				x, y = self.rect.center
+				drops[:,0] += x
+				drops[:,1] += y
+				drops = self.drop(world, drops)
+				self.move(-1,0,world)
+				print "drop drop drop: ", drops
+			else:
+				self.state = 0
+				
 	
 	def bounce(self,world):
 #		self.move(1,0,world)
