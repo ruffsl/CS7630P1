@@ -29,8 +29,8 @@ class Robot(pygame.sprite.Sprite):
 	
 	def getMask(self, world, rad):
 		x, y = self.rect.center
-		xx, yy = draw.circle(x, y, rad/2.0, world.shape)	
-		xMin = 0
+		xx, yy = draw.circle(x, y, rad/2.0, world.shape)	#YOU CALL IT DIAMETER IF YOU'RE GOING TO DIVIDE
+		xMin = 0								#IT BY TWO RUFFIN JESUS COME ON
 		xMax = world.shape[0]-1
 		yMin = 0
 		yMax = world.shape[1]-1
@@ -53,6 +53,10 @@ class Robot(pygame.sprite.Sprite):
 		worldRange = world*mask
 		worldRange += (mask-1)*3
 		return worldRange
+		
+	def rel_pt(self, x_point, y_point):	#Give a point relative to robot, return point in global frame
+		point = (self.rect.center[0]+x_point,self.rect.center[1]+y_point)
+		return point
 	
 #Behave############################################################	
 	

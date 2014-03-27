@@ -12,7 +12,7 @@ config = {'fps': 200,
 			'logo_image'	: 	'logo.png',
 			'path'	:	None,
 			'seed'	: 	42,
-			'max_load':		200,
+			'max_load':		100,
 			'sense_range':	10,
 			'dig_range': 	10,
 			'body_range':	5}
