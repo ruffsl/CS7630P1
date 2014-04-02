@@ -37,9 +37,9 @@ class Robot(pygame.sprite.Sprite):
 		# Get the center of the robot pose
 		x, y = self.rect.center
 		# Draw a circle around that location
-		xx, yy = draw.circle(x, y, rad/2.0, world.shape)	#YOU CALL IT DIAMETER IF YOU'RE GOING TO DIVIDE
+		xx, yy = draw.circle(x, y, rad, world.shape)
 		# Set the index bounds of the world		
-		xMin = 0								#IT BY TWO RUFFIN JESUS COME ON
+		xMin = 0
 		xMax = world.shape[0]-1
 		yMin = 0
 		yMax = world.shape[1]-1

@@ -6,7 +6,6 @@ Created on Tue Mar 18 19:08:07 2014
 """
 
 import pygame, os
-import random
 import numpy as np
 import Image
 from pygame.locals import *
