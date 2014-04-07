@@ -7,82 +7,107 @@ Created on Wed Mar 19 01:20:48 2014
 
 import pygame
 from pygame.locals import *
-import math
-import random
-#from RoboSim.RoboSim.Robot.robot_arch import RobotArch
-import robot_arch
+import robot
+import numpy as np
+import random as rand
 
-class AntRobot(robot_arch.RobotArch):
-    """Test subclass of RobotArch abstract base class"""
-    
-    def __init__(self, image, pos_x, pos_y, azimuth, fwd_speed, spin_speed,\
-                 visual_range, visual_angle, load):
-        super(AntRobot, self).__init__(image, pos_x, pos_y, azimuth, fwd_speed, spin_speed,\
-                 visual_range, visual_angle, load)
+class AntRobot(robot.Robot):    
+	def __init__(self, point, config):
+		super(AntRobot, self).__init__(point, config)
+		self.load = 0
+		self.mode = 0	# 0 = dig; 2 = unload
+		rand.seed()
+
+		# Instantiate behavior objects
+		self.behvr_follow_grav = Behvr_FollowGravity(0, 1, 5)
+		self.behvr_random_walk = Behvr_RandomWalk(2, 2)
+		
+		self.coord_vecsum = Coord_VectorSum()
+
+	def update(self, occupancy_grid, agent_list):
+		#local_world = self.sense(world)
+		local_world = np.array([0, 0])
+		grav_action = self.behvr_follow_grav.action(local_world)
+		rwalk_action = self.behvr_random_walk.action(local_world)
+		print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
+		
+		action_list = np.concatenate(([grav_action], [rwalk_action]), 0)
+		gain_list = np.array([1, 2])
+		arb_res = self.coord_vecsum.arbitrate(action_list.T, gain_list)
+		print 'AntRobot()::update - Arbtrated Action: ' + str(arb_res)
+
         
-        # Local (Robot) Constants
-        self.transparency   = 75
-        self.max_load = 10
-        self.max_range = 10
-        self.max_speed = 10
+	def __str__(self):
+		return 'AntRobot: pos(x, y) = (%s, %s)'\
+		% (self.rect.center[0], self.rect.center[1])
 
 
-    def update(self, occupancy_grid, agent_list):
-        """All sprites have an update() method. This function is
-        typically called once per frame. IMPORTANT: All actions in
-        here execute AFTER the ones called directly in the event loop.
-        """
-        dx = random.randint(-10, 10)
-        dy = random.randint(-10, 10)
-        dtheta = random.randint(-45, 45)
 
-        self.sense(occupancy_grid, agent_list)
-        self.move(dx, dy)
-        self.rotate(dtheta)        
-        
+##################################################
+########### Behavior Class Definitions ########### 
+##################################################
 
-    #this function's job is to place in self.retina the range sensed by each sensor
-    def sense(self, occupancy_grid, agent_list):
-        """Sensor processing of robot's surrounding environment"""
-        pass
+class Behvr_FollowGravity():
+	""" """
+	def __init__(self, x_dir, y_dir, intensity):
+		self.x_dir = x_dir
+		self.y_dir = y_dir
+		self.intensity = intensity
+		
+	def action(self, local_world):
+		return np.array([self.x_dir*self.intensity, self.y_dir*self.intensity])
 
-      
-    def move(self,dx,dy):
-        """Translate robot by (dx, dy)"""
-#        previous_rect = self.rect           #remember in case undo is necessary
-#        self.rect = self.rect.move(dx,dy)
-#        if self.rect.collidelist(list_rect_obstacles) != -1:#if collision exists
-#            print 'mode  -->I collided with wall(s)',\
-#                  self.rect.collidelistall(list_rect_obstacles)
-#            self.rect = previous_rect                   #undo the move
-#            self.collided = True
-        self.rect.move_ip(dx, dy)
+class Behvr_RandomWalk():
+	""" """
+	def __init__(self, x_lim, y_lim):
+		self.x_lim = x_lim
+		self.y_lim = y_lim
+		
+	def action(self, local_world):
+		return np.array([self.x_lim*rand.random(), self.y_lim*rand.random()])
+
+class Coord_VectorSum():
+	""" """
+	def __init__(self):
+		pass
+
+	# Input(s): 
+	# action_list - Concatenated ndarray (matrix) in format:
+	#		[[x0, x1, ... ]
+	#		 y0, y1, ... ]]
+	# gain_list - ndarray: [g1, g2, ...]
+	def arbitrate(self, action_list, gain_list):
+		res = np.dot(action_list, gain_list)
+		print 'Coord_VectorSum()::arbitrate - Vector Sum = ' + str(res)
+		
+		# Probabilistically determine next move direction 
+		# (using vector components for prob. weighting)
+		if ( int(res[0] + res[1])*rand.random() < int(res[0]) ):
+			return np.array([1, 0])
+		else:
+			return np.array([0, 1])
+				
 
 
-    def rotate(self,dtheta):
-        """Rotate robot by dtheta (degrees)"""
-#        center = self.rect.center
-#        self.azi += dtheta
-#        if self.azi >= 360:         #keep theta between -360..360
-#            self.azi = self.azi-360
-#        if self.azi <= -360:
-#            self.azi = self.azi+360
-#        original_rect = self.image_original.get_rect()
-#        rotated_image = pygame.transform.rotate(self.image_original, self.azi)
-#        rotated_rect  = original_rect.copy()
-#        rotated_rect.center = rotated_image.get_rect().center
-#        self.image = rotated_image.subsurface(rotated_rect).copy()
-#        self.image = change_alpha_for_alpha(self.image, r_transparency)
-        self.azi += dtheta
-        
-    def __str__(self):
-        return 'AntRobot: pos(x, y) = (%s, %s), orientation(theta) = %s'\
-        % (self.rect.center[0], self.rect.center[1], self.azi)
-        
         
 if __name__ == "__main__":
-    garbage_img = pygame.image.load('../../robo1.bmp')
-    mAntRobot = AntRobot(garbage_img, 1, 1, 90, 2, 3, 10, 10, 15)
-    for cnt in range(5):
-        print(mAntRobot)
-        mAntRobot.update('garbage', 'garbage')
+	config = {'fps': 200,
+			'b_image'	: 	'background.png',
+			'b_size'	: 	None,
+			'r_image'	: 	'robo10.png',
+			'logo_image'	: 	'logo.png',
+			'path'	:	None,
+			'seed'	: 	42,
+			'max_load':		1000,
+			'sense_range':	5,
+			'dig_range': 	5,
+			'body_range':	5,
+			'dirt': 		-1,
+			'rock': 		-2,
+			'unknown':		-3,
+			'empty':		0}
+	config['path'] = 'D:\Users\Amblix\Documents\GitHub\CS7630P1\Code\RoboSim'
+	mAntRobot = AntRobot((500,390), config)
+	for cnt in range(20):
+		print(mAntRobot)
+		mAntRobot.update('garbage', 'garbage')
