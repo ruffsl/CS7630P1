@@ -51,10 +51,13 @@ class exper_robot(robot.Robot):
 				
 	def unload_dirt(self,world):
 		if self.unload_state == 0:				#Move close to wall
-			temp = self.vision[self.rel_pt(-3,0)]
-			if temp == 0:
+			left = self.vision[self.rel_pt(-3,0)]
+			right = self.vision[self.rel_pt(3,0)]
+			above = self.vision[self.rel_pt(0,-3)]
+			below = self.vision[self.rel_pt(0,3)]
+			if left == 0:
 				self.move(-1,0,world)
-			elif temp == -1:
+			elif left == -1:
 				self.unload_state = 1
 		if self.unload_state == 1:				#Go to surface
 			temp = self.vision[self.rel_pt(-4,0)]
