@@ -24,6 +24,7 @@ config = {'fps': 200,
 #import everything
 import os
 from RoboSim.Robot import exper_robot
+from RoboSim.Robot import etholog_robots
 from RoboSim.Robot import robot
 from RoboSim import sim
 
