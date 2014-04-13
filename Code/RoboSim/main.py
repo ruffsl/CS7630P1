@@ -37,6 +37,7 @@ def main():
 	# Init Robots with config
 #	myRobot = robot.Robot((500,500), config)
 	myRobot = exper_robot.exper_robot((500,390), config)
+#	myRobot = etholog_robots.AntRobot((500,390), config)
 	robots = [myRobot]
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
