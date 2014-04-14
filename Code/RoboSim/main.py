@@ -39,7 +39,7 @@ def main():
 	myRobot = exper_robot.exper_robot((500,395), config, 0)
 	myRobot2 = exper_robot.exper_robot((480,395), config, -1)
 #	myRobot = etholog_robots.AntRobot((500,390), config)
-	robots = [myRobot]
+	robots = [myRobot, myRobot2]
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	

@@ -22,7 +22,8 @@ class exper_robot(robot.Robot):
 		random.seed()
 		self.x_dir = 0
 		self.y_dir = 0
-		self.segment_length = 0
+		self.dig_length = 0
+		self.explore_length = 0
 		
 		#Sub states for behaviors
 		self.start_state = start
@@ -33,7 +34,8 @@ class exper_robot(robot.Robot):
 		self.explore_state = 0
 		
 		#Constants
-		self.RANDOM_LENGTH = 25
+		self.DIG_PERSISTANCE = 25
+		self.EXPLORE_PERSISTANCE = 10
 		self.TOUCH_RANGE = 5
 		self.TUNNEL = -4
 		self.ROOM = -5
@@ -115,20 +117,46 @@ class exper_robot(robot.Robot):
 					self.wall_follow_state = -1
 					
 	def explore(self, world):			#Similar to wall following but probabilistic
-		
-		if self.explore_state == -1:	#Wall follow down left priority
-			if self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
-				self.move(0,1,world)
-			elif self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE:
-				self.move(-1,1,world)
-			elif self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
-				self.move(1,1,world)
-			elif self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
-				self.move(-1,0,world)
-			elif self.touch[1] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
-				self.move(1,0,world)
+			
+		beacons = self.sense_beacon(self.TUNNEL,world)
+		if len(beacons[0]) >= 1:		#Found tunnel beacon
+			print 'Found tunnel beacon'
+			self.state = 1			#Go to dig mode
+			
+		noise = random.randint(0,999)
+				
+		if noise >994:
+			print 'Switching to dig mode'
+			self.state = 1
+			return
+			
+		if self.explore_state == 0:
+			if noise < 300:
 				self.explore_state = 1
-		if self.explore_state == 1:	#Wall follow down right priority
+			elif noise >= 300 and noise < 600:
+				self.explore_state = 2
+			elif noise >= 600 and noise < 800:
+				self.explore_state = 3
+			elif noise >= 800 and noise < 1000:
+				self.explore_state = 4
+		else:
+			self.explore_length = self.explore_length + 1
+			if self.explore_length > self.EXPLORE_PERSISTANCE:
+				self.explore_length = 0
+				self.explore_state = 0
+			
+		if self.explore_state == 1:	#Wall follow down left priority
+			if self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(0,1,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE:
+				self.move(-1,1,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
+				self.move(1,1,world)
+			elif self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
+				self.move(-1,0,world)
+			elif self.touch[1] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(1,0,world)
+		elif self.explore_state == 2:	#Wall follow down right priority
 			if self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
 				self.move(0,1,world)
 			elif self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
@@ -139,7 +167,24 @@ class exper_robot(robot.Robot):
 				self.move(1,0,world)
 			elif self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
 				self.move(-1,0,world)
-				self.explore_state = -1
+		elif self.explore_state == 3:	#Wall follow left priority
+			if self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
+				self.move(-1,0,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE:
+				self.move(-1,1,world)
+			elif self.touch[6] > self.TOUCH_RANGE and self.touch[7] > self.TOUCH_RANGE and self.touch[0] > self.TOUCH_RANGE:
+				self.move(-1,-1,world)
+			elif self.touch[5] > self.TOUCH_RANGE and self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(0,1,world)
+		elif self.explore_state == 4:	#Wall follow right priority
+			if self.touch[1] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(1,0,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
+				self.move(1,1,world)
+			elif self.touch[0] > self.TOUCH_RANGE and self.touch[1] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
+				self.move(1,-1,world)
+			elif self.touch[5] > self.TOUCH_RANGE and self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(0,1,world)
 	
 	def dig_tunnel(self,world):
 		if self.load > self.config['max_load']:
@@ -161,9 +206,9 @@ class exper_robot(robot.Robot):
 			self.move(self.x_dir,self.y_dir,world)
 			digs = self.dig(world)
 #			print 'Dig dig dig: ', digs
-			self.segment_length = self.segment_length + 1
-			if self.segment_length > self.RANDOM_LENGTH:
-				self.segment_length = 0
+			self.dig_length = self.dig_length + 1
+			if self.dig_length > self.DIG_PERSISTANCE:
+				self.dig_length = 0
 				self.dig_state = 0
 				
 	def unload_dirt(self,world):
@@ -236,10 +281,10 @@ class exper_robot(robot.Robot):
 				self.wall_follow_state = -self.side # set priority
 		elif self.unload_state == 10:
 			self.wall_follow(0,world)		#anything not 1 goes down
-			beacons = self.sense_beacon(self.TUNNEL,world)
-			if len(beacons[0]) >= 1:
-				self.state = 1
-				self.unload_state = 0
+			if self.rect.center[1] > 410:		#back in tunnel
+				self.unload_state = 0		#Reset unload
+				self.state = 3			#switch to explore mode
+			
 				
 ### Functions for exper_robot unique actions				
 				
