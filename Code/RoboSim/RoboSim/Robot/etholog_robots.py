@@ -7,6 +7,7 @@ Created on Wed Mar 19 01:20:48 2014
 
 import pygame
 from pygame.locals import *
+from skimage import draw
 import math
 import robot
 import numpy as np
@@ -16,32 +17,176 @@ class AntRobot(robot.Robot):
 	def __init__(self, point, config):
 		super(AntRobot, self).__init__(point, config)
 		self.load = 0
-		self.mode = 0	# 0 = dig; 2 = unload
+		self.state = 0	# 0 = dig; 2 = transport; 3 = unload
+		self.surf_orientation = -1	# 0 = left; 1 = right
+		self.last_action = np.zeros((2, 1), dtype=float)
+		
 		rand.seed()
 
 		# Instantiate behavior objects
-		self.behvr_follow_grav = Behvr_FollowGravity(0, 1, 2)
-		self.behvr_random_walk = Behvr_RandomWalk(2, 2)
-		
+		self.behvr_follow_grav = Behvr_DirectionalBias(0, 1, 2)
+		self.behvr_go_to_surf = Behvr_DirectionalBias(0, -1, 2)
+		self.behvr_go_left = Behvr_DirectionalBias(-1, 0, 1)
+		self.behvr_go_right = Behvr_DirectionalBias(1, 0, 1)
+		self.behvr_random_walk = Behvr_RandomWalk()
+		self.behvr_avoid_past = Behvr_AvoidPast()
+#		self.behvr_surf_attract = Behvr_SurfAttraction((400-self.config['body_range']))
+		self.behvr_unload_dirt = Behvr_UnloadDirt(0.4, self.config['body_range'])
+		self.behvr_lay_trail_pheromone = Behvr_LayTrailPheromone(1)
+		self.behvr_follow_trail_pheromone = Behvr_FollowTrailPheromone()
 		self.coord_vecsum = Coord_VectorSum()
+		
+		# Debug/Testing variables
+		self.counter = 0
 
 	def update(self, world, robots):
-		#local_world = self.sense(world)
-		local_world = np.array([0, 0])
-		grav_action = self.behvr_follow_grav.action(local_world)
-		rwalk_action = self.behvr_random_walk.action(local_world)
-		print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
-		
-		action_list = np.concatenate(([grav_action], [rwalk_action]), 0)
-		gain_list = np.array([1, 3])
-		arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-		print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
-		
-		self.move(int(arb_res[0]), int(arb_res[1]), world)
-		
-		self.dig(world)
+		local_world = self.sense(world)
+		# local_world = np.array([0, 0])
 
-        
+		if ( self.state == 0 and self.load >= self.config['max_load'] ):
+			self.state = 1
+		elif ( self.state == 1 and self.rect.center[1] <= (400-self.config['body_range']) ):
+			self.last_action = np.zeros((2, 1), dtype=float)
+			self.state = 2
+		elif ( self.state == 2 and self.load <= 0 ):
+			self.last_action = np.zeros((2, 1), dtype=float)
+			if ( self.surf_orientation == 0 ):
+				self.surf_orientation == 1
+			else:
+				self.surf_orientation == 0
+			self.state = 3
+			
+		# Dig downwards tunnel
+		if ( self.state == 0 ):
+#		if ( self.state == 0 and self.load < self.config['max_load'] ):
+			grav_action = self.behvr_follow_grav.action()
+			rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
+			print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
+			
+			action_list = np.concatenate(([grav_action], [rwalk_action]), 0)
+			gain_list = np.array([2, 3])
+			arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+			
+			self.move(int(arb_res[0]), int(arb_res[1]), world)
+			
+			self.dig(world)
+		
+		# Navigate towards surface	
+		if ( self.state == 1 ):
+#		if ( self.load > self.config['max_load'] and self.rect.center[1] > (400-self.config['body_range']) ):
+			while ( True ):
+				surf_action = self.behvr_go_to_surf.action()
+				rwalk_action = self.behvr_random_walk.action(2, -2, 1, -1)
+				print 'AntRobot()::update - Surface Action: ' + str(surf_action) + ' R-Walk Action: ' + str(rwalk_action)
+				
+				action_list = np.concatenate(([surf_action], [rwalk_action]), 0)
+				gain_list = np.array([3, 2])
+				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
+				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+				
+				self.move(int(arb_res[0]), int(arb_res[1]), world)
+				if ( self.collision(world, robots) ):
+					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+				else:
+					break
+				
+			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])
+				
+				
+		# Release transported dirt
+		if ( self.state == 2 ):
+#		if ( self.load != 0 and self.rect.center[1] <= (400-self.config['body_range']) ):
+		
+			if ( self.surf_orientation == -1 ):
+				if ( rand.random() < 0.5 ):
+					self.surf_orientation = 0
+				else:
+					self.surf_orientation = 1
+		
+			while ( True ):
+				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
+#				avoidp_action = self.behvr_avoid_past.action(self.last_action)
+				if ( self.surf_orientation == 0 ):
+					surf_bias_action = self.behvr_go_left.action()
+				else:
+					surf_bias_action = self.behvr_go_right.action()
+				print 'AntRobot()::update - State: ' + str(self.state) + ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+				
+				action_list = np.concatenate(([rwalk_action], [surf_bias_action]), 0)
+				gain_list = np.array([2, 5])
+				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
+				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
+				
+				self.move(int(arb_res[0]), int(arb_res[1]), world)
+				if ( self.collision(world, robots) ):
+					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+				else:
+					break	
+
+			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])		
+			
+			self.last_action[0] = arb_res[0]			
+			unload_dirt, dx, dy = self.behvr_unload_dirt.action(self.last_action)
+			print 'Unload Dirt: ' + str(unload_dirt) + ', dx = ' + str(dx) + ', dy = ' + str(dy)
+			if ( unload_dirt ):
+				self.unload(world, dx, dy)
+		
+		# Follow/search for pheromones back to digging site
+		if ( self.state == 3 ):
+			local_world = self.sense(world)
+			
+			while ( True ):
+				if ( self.rect.center[1] <= (400-self.config['body_range'] ) ):
+					rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
+					follow_pherom_action = self.behvr_follow_trail_pheromone.action(local_world, \
+						self.rect.center[0], self.rect.center[1], self.last_action)
+	
+					if ( self.surf_orientation == 0 ):
+						surf_bias_action = self.behvr_go_left.action()
+					else:
+						surf_bias_action = self.behvr_go_right.action()
+					print 'AntRobot()::update - State: ' + str(self.state) + ' R-Walk Action: ' + str(rwalk_action) + ' Follow Pherom. Action: ' + str(follow_pherom_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+					
+					action_list = np.concatenate(([rwalk_action], [follow_pherom_action], [surf_bias_action]), 0)
+					gain_list = np.array([2, 4, 5])
+					arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
+					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
+				
+				self.move(int(arb_res[0]), int(arb_res[1]), world)
+				if ( self.collision(world, robots) ):
+					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+				else:
+					break	
+
+
+#			if ( self.counter == 0 ):
+#				tmp = self.getRange(world, self.config['sense_range'])
+#				x_pos = self.rect.center[0]
+#				y_pos = self.rect.center[1]
+#				
+#				for x_delta in range(16):
+#					for y_delta in range(16):
+#						print str(x_pos-16/2+x_delta) + ' ' + str(y_pos-16/2+y_delta) + ' ' + str(tmp[x_pos-16/2+x_delta, y_pos-16/2+y_delta])
+#				self.counter = 1;
+#				print str(self)
+
+	
+	def unload(self, world, dx, dy):
+		self.move(dx, dy, world)
+		x, y = self.rect.center
+		xx, yy = draw.circle(x, y, self.config['dig_range'], world.shape)
+		drop_loc = np.concatenate(([xx], [yy]), 0)
+		drop_cnt = self.drop(world, drop_loc.T)
+		self.move(-1*dx, -1*dy, world)
+		print 'Drop Count = ' + str(drop_cnt)	
+	
+	def collision(self, world, robots):
+		mask = self.getMask(world, self.config['body_range'])
+		body_locale = world*mask
+		return ( np.any( body_locale < 0 ) )
+		
+								
 	def __str__(self):
 		return 'AntRobot: pos(x, y) = (%s, %s)'\
 		% (self.rect.center[0], self.rect.center[1])
@@ -52,24 +197,170 @@ class AntRobot(robot.Robot):
 ########### Behavior Class Definitions ########### 
 ##################################################
 
-class Behvr_FollowGravity():
-	""" """
+
+class Behvr_FollowTrailPheromone():
+	""" Usage: Behvr_FollowTrailPheromone() """
+	def __init__(self):
+		pass
+	
+	def action(self, local_world, x_pos, y_pos, last_action):
+		abs_pherom_loc = np.asarray(np.where(local_world == local_world.max()))
+		pherom_val = local_world[abs_pherom_loc[0].tolist(), abs_pherom_loc[1].tolist()]
+		print 'abs_pherom_loc = ' + str(abs_pherom_loc)
+		print 'abs_pherom_val = ' + str(pherom_val)
+		vector = np.array([0, 0])
+
+#		if ( last_action[0] > 0 ):
+#			valid_x_region = np.asarray(np.where(abs_pherom_loc[0] > (x_pos-2)))
+#		elif ( last_action[0] < 0 ):
+#			valid_x_region = np.asarray(np.where(abs_pherom_loc[0] < (x_pos+2)))
+#		else:
+#			valid_x_region = abs_pherom_loc[0]
+#			
+#		if ( last_action[1] > 0 ):
+#			valid_y_region = np.asarray(np.where(abs_pherom_loc[1] > (y_pos-2)))
+#		elif ( last_action[1] < 0 ):
+#			valid_y_region = np.asarray(np.where(abs_pherom_loc[1] < (y_pos+2)))
+#		else:
+#			valid_y_region = abs_pherom_loc[1]
+#
+#		valid_indices = np.intersect1d(valid_x_region, valid_y_region)
+#		filtered_pherom_loc = abs_pherom_loc[:, valid_indices]
+#				
+#		rel_pherom_loc = filtered_pherom_loc.T-np.array([x_pos, y_pos])
+#		rel_pherom_loc = rel_pherom_loc.T
+#		pherom_val = local_world[filtered_pherom_loc[0].tolist(), filtered_pherom_loc[1].tolist()]
+#		
+#		vector = np.dot(rel_pherom_loc, pherom_val)
+		return vector
+		
+
+class Behvr_LayTrailPheromone():
+	""" Usage: Behvr_LayTrailPheromone(1) """
+	def __init__(self, intensity_inc):
+		self.intensity_inc = intensity_inc
+	
+	def action(self, world, x_pos, y_pos):
+		world[x_pos, y_pos] += self.intensity_inc
+		
+
+class Behvr_UnloadDirt():
+	""" Usage: Behvr_UnloadDirt(0.4) """
+	def __init__(self, drop_prob, body_range):
+		self.drop_prob = drop_prob
+		self.body_range = body_range
+	
+	def action(self, last_action):
+		# if dice roll -> unload dirt
+		unload_dirt = False
+		dx, dy = 0, 0
+		if ( rand.random() < self.drop_prob ):
+			unload_dirt = True
+			while ( dx == 0 or dy == 0 ):
+				if ( last_action[0] > 0 ):
+					sign = 1
+				else:
+					sign = -1
+			
+				dx = sign*(2*self.body_range)
+			
+				if (rand.random() < 0.5):
+					dy = 2*self.body_range
+				else:
+					dy = 0
+			
+			if ( dx != 0 and dy != 0 ):
+				if ( dx > 0 ):
+					dx -= 2
+				else:
+					dx += 2
+				dy -= 1
+				
+		return [unload_dirt, dx, dy]
+
+
+class Behvr_PointRepulsion():
+	""" Usage: Behvr_PointRepulsion(500, 395) """
+	def __init__(self, x_center, y_center):
+		self.x_center = x_center
+		self.y_center = y_center
+	
+	def action(self, x_pos, y_pos, supress_x=0, supress_y=0):
+		vector = np.array([0, 0])
+		x_delta = x_pos - self.x_center
+		y_delta = y_pos - self.y_center
+
+		if ( x_delta > 0 ):
+			x_scale = 1
+		else:
+			x_scale = -1
+		if ( y_delta > 0 ):
+			y_scale = 1
+		else:
+			y_scale = -1
+			
+		vector[0] = -1*(supress_x-1)*x_scale/(1+x_delta)^2 
+		vector[1] = -1*(supress_y-1)*y_scale/(1+y_delta)^2
+
+		return vector	
+
+
+class Behvr_SurfAttraction():
+	""" Usage: Behvr_SurfAttraction(400) """
+	def __init__(self, surf_y_pos):
+		self.surf_y_pos = surf_y_pos
+	
+	def action(self, y_pos):
+		vector = np.array([0, 0])
+		vector[1] = -1*(y_pos - self.surf_y_pos)^2 
+
+		return vector			
+	
+	
+class Behvr_AvoidPast():
+	""" Usage: Behvr_AvoidPast() """
+	def __init__(self):
+		pass
+		
+	def action(self, last_action):
+		x_dir = 0
+		y_dir = 0
+		
+		if (last_action[0] > 0):
+			x_dir = 1
+		elif (last_action[0] < 0):
+			x_dir = -1
+			
+		if (last_action[1] > 0):
+			y_dir = 1
+		elif (last_action[1] < 0):
+			y_dir = -1
+		
+#		return np.array([self.x_dir*self.intensity, self.y_dir*self.intensity])
+		return np.array([x_dir, y_dir])
+
+class Behvr_DirectionalBias():
+	""" Usage: Behvr_DirectionalBias(0, 1, 2) """
 	def __init__(self, x_dir, y_dir, intensity):
 		self.x_dir = x_dir
 		self.y_dir = y_dir
 		self.intensity = intensity
 		
-	def action(self, local_world):
+	def action(self):
 		return np.array([self.x_dir*self.intensity, self.y_dir*self.intensity])
+
 
 class Behvr_RandomWalk():
 	""" """
-	def __init__(self, x_lim, y_lim):
-		self.x_lim = x_lim
-		self.y_lim = y_lim
+	def __init__(self):
+		pass
+				
+	def action(self, x_lim_p, x_lim_n, y_lim_p, y_lim_n):
+		x_rand = (x_lim_p - x_lim_n)*rand.random() + x_lim_n
+		y_rand = (y_lim_p - y_lim_n)*rand.random() + y_lim_n
 		
-	def action(self, local_world):
-		return np.array([2*self.x_lim*rand.random()-self.x_lim, 2*self.y_lim*rand.random()-self.y_lim])
+		return np.array([x_rand, y_rand])
+
 
 class Coord_VectorSum():
 	""" """
