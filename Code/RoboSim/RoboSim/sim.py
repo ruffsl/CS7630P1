@@ -72,6 +72,14 @@ class sim:
 			dirt_color = [36,16,4,220]
 			# Apply the color to the mask where dirt exsists in the world
 			mask[np.where(self.world == -1)] = dirt_color
+			for key, value in self.config['beacons'].items():
+				mask[np.where(self.world == value['id'])] = value['color']
+			pheromones = np.where(self.world > 0)
+			if(pheromones[0].size):
+				pheromone_colors = np.asarray(self.config['pheromone']['color'] * pheromones[0].size)
+				print pheromone_colors.shape
+				pheromone_colors[:,3] = self.world[pheromones]
+				mask[pheromones] = pheromone_colors
 			# Ajust the mask as to match the upright image background
 			mask = Image.fromarray(mask).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90)
 			# Paste background with that of the mask to get the current world view		
