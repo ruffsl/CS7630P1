@@ -39,16 +39,18 @@ def main():
 	myRobot = exper_robot.exper_robot((500,396), config, 0)
 #	myRobot2 = exper_robot.exper_robot((480,396), config, 1)
 #	myRobot = etholog_robots.AntRobot((500,390), config)
-	robots = [myRobot, myRobot2]
+	robots = [myRobot]
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	
 	# Progress flag
 	going = True
+	render = True
+	flags = {'going': going, 'render': render}
 	# Loop through simulation
-	while going:
+	while flags['going']:
 		# Update simulation and progress flag
-		going = mainSim.update()
+		mainSim.update(flags)
 	# Quit simulation and close window
 	mainSim.quit() #also calls display.quit()
 

@@ -65,7 +65,7 @@ class Robot(pygame.sprite.Sprite):
 		# Apply the mask to the world
 		worldRange = world*mask
 		# Use the invert of the mask to specify the unknown
-		worldRange += (mask-1)*(self.config['unknown'])
+		worldRange -= (mask-1)*(self.config['unknown'])
 		return worldRange
 		
 	def rel_pt(self, x_point, y_point):	#Give a point relative to robot, return point in global frame
