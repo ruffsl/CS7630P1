@@ -36,8 +36,8 @@ def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 	# Init Robots with config
 #	myRobot = robot.Robot((500,500), config)
-	myRobot = exper_robot.exper_robot((500,396), config, 0)
-#	myRobot2 = exper_robot.exper_robot((480,396), config, 1)
+	myRobot = exper_robot.exper_robot((500,395), config, 0)
+	myRobot2 = exper_robot.exper_robot((480,395), config, -1)
 #	myRobot = etholog_robots.AntRobot((500,390), config)
 	robots = [myRobot, myRobot2]
 	# Init simulation with robots

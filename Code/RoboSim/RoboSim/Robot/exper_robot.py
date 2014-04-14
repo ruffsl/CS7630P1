@@ -30,6 +30,7 @@ class exper_robot(robot.Robot):
 		self.side = 1
 		self.dig_state = 0
 		self.wall_follow_state = -1
+		self.explore_state = 0
 		
 		#Constants
 		self.RANDOM_LENGTH = 25
@@ -48,14 +49,17 @@ class exper_robot(robot.Robot):
 			self.dig_tunnel(world)
 		elif self.state == 2:
 			self.unload_dirt(world)
+		elif self.state == 3:
+			self.explore(world)
 		return None
 		
 	def start(self, world):
 		if self.start_state == 0:
 			self.state = 1
 		else:
-			self.move(self.start_state,0,world)
-			if self.touch[4] > self.TOUCH_RANGE:
+			self.wall_follow_state = -self.start_state
+			self.wall_follow(0,world)
+			if self.rect.center[1] >= 420:
 				self.state = 1
 		
 	def wall_follow(self,direction, world):
@@ -109,6 +113,33 @@ class exper_robot(robot.Robot):
 				elif self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
 					self.move(-1,0,world)
 					self.wall_follow_state = -1
+					
+	def explore(self, world):			#Similar to wall following but probabilistic
+		
+		if self.explore_state == -1:	#Wall follow down left priority
+			if self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(0,1,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE:
+				self.move(-1,1,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
+				self.move(1,1,world)
+			elif self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
+				self.move(-1,0,world)
+			elif self.touch[1] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(1,0,world)
+				self.explore_state = 1
+		if self.explore_state == 1:	#Wall follow down right priority
+			if self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(0,1,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE:
+				self.move(1,1,world)
+			elif self.touch[4] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE:
+				self.move(-1,1,world)
+			elif self.touch[1] > self.TOUCH_RANGE and self.touch[2] > self.TOUCH_RANGE and self.touch[3] > self.TOUCH_RANGE:
+				self.move(1,0,world)
+			elif self.touch[7] > self.TOUCH_RANGE and self.touch[6] > self.TOUCH_RANGE and self.touch[5] > self.TOUCH_RANGE:
+				self.move(-1,0,world)
+				self.explore_state = -1
 	
 	def dig_tunnel(self,world):
 		if self.load > self.config['max_load']:
