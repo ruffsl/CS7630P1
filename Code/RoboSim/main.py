@@ -11,7 +11,7 @@ pheromone = {'color': [255,140,0,255], 'id': 0}
 beacons = {'tunnel': tunnel, 'room': room}
 
 config = {'fps': 200,
-			'b_image'	: 	'background.png',
+			'b_image'	: 	'background_500.png',
 			'b_size'	: 	None,
 			'r_image'	: 	'robo10.png',
 			'logo_image'	: 	'logo.png',
@@ -43,13 +43,10 @@ def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 	# Init Robots with config
 #	myRobot = robot.Robot((500,500), config)
-	myRobot = exper_robot.exper_robot((500,396), config, 0)
-	myRobot1 = exper_robot.exper_robot((500,396), config, 0)
-	myRobot2 = exper_robot.exper_robot((500,396), config, 0)
-	myRobot3 = exper_robot.exper_robot((500,396), config, 0)
+	myRobot = exper_robot.exper_robot((250,195), config, 0)
 #	myRobot2 = exper_robot.exper_robot((480,396), config, 1)
 #	myRobot = etholog_robots.AntRobot((500,390), config)
-	robots = [myRobot,myRobot1,myRobot2,myRobot3]
+	robots = [myRobot]
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	

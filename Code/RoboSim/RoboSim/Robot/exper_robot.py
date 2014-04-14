@@ -115,7 +115,7 @@ class exper_robot(robot.Robot):
 			self.lay_beacon(self.TUNNEL, world)
 			self.state = 2
 			self.dig_state = 0
-		elif self.rect.center[1] < 420:
+		elif self.rect.center[1] < 220:
 			self.move(0,1,world)
 			digs = self.dig(world)
 #			print 'Dig dig dig: ', digs
@@ -138,7 +138,7 @@ class exper_robot(robot.Robot):
 	def unload_dirt(self,world):
 #		print 'Sense:', self.touch, 'State:', self.unload_state, 'Load:', self.load
 		if self.unload_state == 0:
-			if self.rect.center[1] < 410:
+			if self.rect.center[1] < 210:
 				self.unload_state = 1
 			else:
 				self.wall_follow(1, world)			#1 goes up
