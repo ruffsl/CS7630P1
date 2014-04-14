@@ -4,9 +4,14 @@ Created on Mon Mar 17 17:26:09 2014
 
 @author: whitemrj
 """
+tunnel 	= {'color': [255,140,0,255], 'id': -4}
+room 		= {'color': [0,255,255,255], 'id': -5}
+pheromone = {'color': [255,140,0,255], 'id': 0}
+
+beacons = {'tunnel': tunnel, 'room': room}
 
 config = {'fps': 200,
-			'b_image'	: 	'background.png',
+			'b_image'	: 	'background_500.png',
 			'b_size'	: 	None,
 			'r_image'	: 	'robo10.png',
 			'logo_image'	: 	'logo.png',
@@ -19,7 +24,9 @@ config = {'fps': 200,
 			'dirt': 			-1,
 			'rock': 			-2,
 			'unknown':		-3,
-			'empty':			 0}
+			'empty':			 0,
+			'beacons':		beacons,
+			'pheromone': 	pheromone}
 
 #import everything
 import os
@@ -36,9 +43,7 @@ def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 	# Init Robots with config
 #	myRobot = robot.Robot((500,500), config)
-	myRobot = exper_robot.exper_robot((500,396), config, 0)
-#	myRobot2 = exper_robot.exper_robot((480,396), config, 1)
-#	myRobot = etholog_robots.AntRobot((500,390), config)
+	myRobot = exper_robot.exper_robot((250,195), config, 0)
 	robots = [myRobot]
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
