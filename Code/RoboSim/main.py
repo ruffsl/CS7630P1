@@ -42,18 +42,9 @@ def main():
 	# Set path to curret root directory for file
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 	# Init Robots with config
-<<<<<<< HEAD
 #	myRobot = robot.Robot((500,500), config)
 	myRobot = exper_robot.exper_robot((250,195), config, 0)
-#	myRobot2 = exper_robot.exper_robot((480,396), config, 1)
-#	myRobot = etholog_robots.AntRobot((500,390), config)
 	robots = [myRobot]
-=======
-	myRobot = exper_robot.exper_robot((500,395), config, 0)
-	myRobot2 = exper_robot.exper_robot((480,395), config, -1)
-#	myRobot = etholog_robots.AntRobot((500,390), config)
-	robots = [myRobot, myRobot2]
->>>>>>> 38a10db3f2369e13faa166236a9d05a520bf30bb
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	
