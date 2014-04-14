@@ -58,58 +58,63 @@ class sim:
 		world[-1, :] = self.config['rock']
 		return world
 
-	def render(self):
+	def render(self, flags):
 		'''Render the current state of the simulation'''
-		# Make a copy of the current world
-		world = self.b_image_raw.copy()
-		# Get the dimentions of the world
-		mask_shape = [self.world.shape[0], self.world.shape[1], 4]
-		# Create a mask the same size as the world
-		mask = np.zeros(mask_shape, dtype=np.uint8)
-		# Make a dark shade of opaque dirt color
-		dirt_color = [36,16,4,220]
-		# Apply the color to the mask where dirt exsists in the world
-		mask[np.where(self.world == -1)] = dirt_color
-		# Ajust the mask as to match the upright image background
-		mask = Image.fromarray(mask).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90)
-		# Paste background with that of the mask to get the current world view		
-		world.paste(mask, (0, 0, self.world.shape[0], self.world.shape[1]), mask)
-		# Strip off the alpha channel, just use RGB channels		
-		world = np.asarray(world)[...,0:3]
-		# Transpose the image so its upright, not sideways
-		world = np.swapaxes(world,0,1)
-		# Make a serface from it
-		self.b_image = pygame.surfarray.make_surface(world)
-		# Then blend that surface with the screen
-		self.screen.blit(self.b_image, (0, 0))
+		
+		if(flags['render']):
+			# Make a copy of the current world
+			world = self.b_image_raw.copy()
+			# Get the dimentions of the world
+			mask_shape = [self.world.shape[0], self.world.shape[1], 4]
+			# Create a mask the same size as the world
+			mask = np.zeros(mask_shape, dtype=np.uint8)
+			# Make a dark shade of opaque dirt color
+			dirt_color = [36,16,4,220]
+			# Apply the color to the mask where dirt exsists in the world
+			mask[np.where(self.world == -1)] = dirt_color
+			# Ajust the mask as to match the upright image background
+			mask = Image.fromarray(mask).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90)
+			# Paste background with that of the mask to get the current world view		
+			world.paste(mask, (0, 0, self.world.shape[0], self.world.shape[1]), mask)
+			# Strip off the alpha channel, just use RGB channels		
+			world = np.asarray(world)[...,0:3]
+			# Transpose the image so its upright, not sideways
+			world = np.swapaxes(world,0,1)
+			# Make a serface from it
+			self.b_image = pygame.surfarray.make_surface(world)
+			# Then blend that surface with the screen
+			self.screen.blit(self.b_image, (0, 0))
 		
 		# Render the robot movments
 		self.allrobots.draw(self.screen)
 		# Push the new frame to the display
 		pygame.display.flip()
 
-	def update(self):
+	def update(self, flags):
 		'''Update the current state of the simulation'''
 		# Set the flag by defult
-		going = True
+#		going = True
 		# Tic the clock acording to the fps speed
 		self.clock.tick(self.config['fps'])
-
+		
 		#Event loop################################
 		for event in pygame.event.get():
 			if event == QUIT:
-				going = False
+				flags['going'] = False
 			elif event.type == KEYDOWN:
 				if event.key == K_ESCAPE:
-					going = False
+					flags['going'] = False
+				if event.key == K_SPACE:
+					flags['render'] = not flags['render'] 
+					print "render: ", flags['render']
 		#End of event loop#########################
 
 		# Now update all the robots
 		self.allrobots.update(self.world, self.robots)
 		# Then render all of the changes
-		self.render()
+		self.render(flags)
 		# Return the state of the simulation
-		return going
+#		return going
 
 	def quit(self):
 		'''Quite the simulation'''

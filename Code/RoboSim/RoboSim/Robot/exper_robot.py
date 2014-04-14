@@ -149,7 +149,7 @@ class exper_robot(robot.Robot):
 		elif self.rect.center[1] < 420:
 			self.move(0,1,world)
 			digs = self.dig(world)
-			print 'Dig dig dig: ', digs
+#			print 'Dig dig dig: ', digs
 		elif self.dig_state == 0:		#Pick a new direction via random selection
 			self.x_dir = random.randint(-1,1)
 			self.y_dir = random.randint(0,1)
@@ -160,21 +160,21 @@ class exper_robot(robot.Robot):
 		elif self.dig_state == 1:		#Dig set direction for some distance
 			self.move(self.x_dir,self.y_dir,world)
 			digs = self.dig(world)
-			print 'Dig dig dig: ', digs
+#			print 'Dig dig dig: ', digs
 			self.segment_length = self.segment_length + 1
 			if self.segment_length > self.RANDOM_LENGTH:
 				self.segment_length = 0
 				self.dig_state = 0
 				
 	def unload_dirt(self,world):
-		print 'Sense:', self.touch, 'State:', self.unload_state, 'Load:', self.load
+#		print 'Sense:', self.touch, 'State:', self.unload_state, 'Load:', self.load
 		if self.unload_state == 0:
 			if self.rect.center[1] < 410:
 				self.unload_state = 1
 			else:
 				self.wall_follow(1, world)			#1 goes up
 		elif self.unload_state == 1:				#Center in tunnel
-			print self.touch[6]
+#			print self.touch[6]
 			if self.touch[6] == self.TOUCH_RANGE+1:
 				self.move(-1,0,world)
 			elif self.touch[2] == self.TOUCH_RANGE+1:
@@ -182,7 +182,7 @@ class exper_robot(robot.Robot):
 			else:
 				self.unload_state = 2
 		elif self.unload_state == 2:				#Go to surface
-			print self.touch[6]
+#			print self.touch[6]
 			if self.touch[6] <= self.TOUCH_RANGE and self.touch[2] <= self.TOUCH_RANGE:
 				self.move(0,-1,world)
 			elif self.touch[6] > self.TOUCH_RANGE:
@@ -194,7 +194,7 @@ class exper_robot(robot.Robot):
 				self.move(1,0,world)
 				self.unload_state = 3
 		elif self.unload_state == 3:				#Move on top
-			print 'Move on top'
+#			print 'Move on top'
 			temp = self.touch[4]
 			if temp > self.TOUCH_RANGE:
 				self.move(self.side,-1,world)
