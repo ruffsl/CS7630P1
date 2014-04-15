@@ -107,6 +107,7 @@ class AntRobot(robot.Robot):
 		if ( self.state == 2 ):
 #		if ( self.load != 0 and self.rect.center[1] <= (400-self.config['body_range']) ):
 	
+			move_fail_cnt = 0
 			while ( True ):
 				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
 #				avoidp_action = self.behvr_avoid_past.action(self.last_action)
@@ -114,18 +115,24 @@ class AntRobot(robot.Robot):
 					surf_bias_action = self.behvr_go_left.action()
 				else:
 					surf_bias_action = self.behvr_go_right.action()
-				print 'AntRobot()::update - State: ' + str(self.state)  + ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)		
+				print ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
 				
 				action_list = np.concatenate(([rwalk_action], [surf_bias_action]), 0)
 				gain_list = np.array([2, 5])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
 				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
-				
+								
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				if ( self.collision(world, robots) ):
-					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					move_fail_cnt += 1
+					if ( move_fail_cnt > 20 ):
+						self.dig(world)
+						break
+					else:
+						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)						
 				else:
-					break	
+					break
 
 			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])		
 			
@@ -139,8 +146,9 @@ class AntRobot(robot.Robot):
 		if ( self.state == 3 ):
 			local_world = self.sense(world)
 			
+			move_fail_cnt = 0
 			while ( True ):
-				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
+				rwalk_action = self.behvr_random_walk.action(1, -1, 2, -2)
 				follow_pherom_action = self.behvr_follow_trail_pheromone.action(local_world, \
 					self.rect.center[0], self.rect.center[1], self.last_action)
 
@@ -153,7 +161,7 @@ class AntRobot(robot.Robot):
 					print ' R-Walk Action: ' + str(rwalk_action) + ' Follow Pherom. Action: ' + str(follow_pherom_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
 					
 					action_list = np.concatenate(([rwalk_action], [follow_pherom_action], [surf_bias_action]), 0)
-					gain_list = np.array([1, 3, 8])
+					gain_list = np.array([8, 2, 10])
 					arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
 					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
 				else:
@@ -167,14 +175,21 @@ class AntRobot(robot.Robot):
 				
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				if ( self.collision(world, robots) ):
-					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					move_fail_cnt += 1
+					if ( move_fail_cnt > 20 ):
+						self.dig(world)
+						self.state = 0
+						break
+					else:
+						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)						
 				else:
-					break	
+					break
 
 			if ( np.all( self.rect.center == self.last_pos ) ):
-				self.impatience += 1
-			else:
-				self.impatience = 0
+				self.impatience += 2
+			elif ( self.impatience > 0 ):
+				self.impatience -= 1
+			print 'self.impatience = ' + str(self.impatience)
 
 			self.last_action = arb_res			
 			self.last_pos = self.rect.center
