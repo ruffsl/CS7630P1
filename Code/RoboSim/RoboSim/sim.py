@@ -69,7 +69,7 @@ class sim:
 			# Create a mask the same size as the world
 			mask = np.zeros(mask_shape, dtype=np.uint8)
 			# Make a dark shade of opaque dirt color
-			dirt_color = [36,16,4,220]
+			dirt_color = [4,4,4,246]
 			# Apply the color to the mask where dirt exsists in the world
 			mask[np.where(self.world == -1)] = dirt_color
 			for key, value in self.config['beacons'].items():
