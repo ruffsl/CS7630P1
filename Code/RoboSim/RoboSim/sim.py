@@ -77,8 +77,8 @@ class sim:
 			pheromones = np.where(self.world > 0)
 			if(pheromones[0].size):
 				pheromone_colors = np.asarray([self.config['pheromone']['color']] * pheromones[0].size)
-				print pheromone_colors.shape
-				pheromone_colors[:,3] = self.world[pheromones]
+				print self.world[pheromones]
+				pheromone_colors[:,3] = np.clip(self.world[pheromones]*int((255-60)/255),0,255) + np.clip(self.world[pheromones], 0, 1)*60
 				mask[pheromones] = pheromone_colors
 			# Ajust the mask as to match the upright image background
 			mask = Image.fromarray(mask).transpose(Image.FLIP_LEFT_RIGHT).transpose(Image.ROTATE_90)

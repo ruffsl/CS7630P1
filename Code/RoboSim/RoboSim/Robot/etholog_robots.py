@@ -23,6 +23,8 @@ class AntRobot(robot.Robot):
 		self.last_pos = np.zeros((2, 1), dtype=int)
 		self.impatience = 0
 		
+		self.SURFACE = 0
+		
 		rand.seed()
 
 		# Instantiate behavior objects
@@ -32,7 +34,7 @@ class AntRobot(robot.Robot):
 		self.behvr_go_right = Behvr_DirectionalBias(1, 0, 1)
 		self.behvr_random_walk = Behvr_RandomWalk()
 		self.behvr_avoid_past = Behvr_AvoidPast()
-#		self.behvr_surf_attract = Behvr_SurfAttraction((400-self.config['body_range']))
+#		self.behvr_surf_attract = Behvr_SurfAttraction((self.SURFACE-self.config['body_range']))
 		self.behvr_unload_dirt = Behvr_UnloadDirt(0.4, self.config['body_range'])
 		self.behvr_lay_trail_pheromone = Behvr_LayTrailPheromone(1)
 		self.behvr_follow_trail_pheromone = Behvr_FollowTrailPheromone()
@@ -42,12 +44,14 @@ class AntRobot(robot.Robot):
 		self.counter = 0
 
 	def update(self, world, robots):
+		self.SURFACE = (world.shape[1]*self.config['dirt_ratio'])		
+		
 		local_world = self.sense(world)
 		# local_world = np.array([0, 0])
 
 		if ( self.state == 0 and self.load >= self.config['max_load'] ):
 			self.state = 1
-		elif ( self.state == 1 and self.rect.center[1] <= (400-self.config['body_range']-4) ):
+		elif ( self.state == 1 and self.rect.center[1] <= (self.SURFACE-self.config['body_range']-4) ):
 			self.last_action = np.zeros((2, 1), dtype=float)
 			if ( rand.random() < 0.5 ):
 				self.surf_orientation = 0
@@ -61,7 +65,7 @@ class AntRobot(robot.Robot):
 			else:
 				self.surf_orientation = 0
 			self.state = 3
-		elif ( self.state == 3 and self.rect.center[1] > 400 ):
+		elif ( self.state == 3 and self.rect.center[1] > self.SURFACE ):
 			if ( rand.random() < 0.05 or self.impatience > 20 ):
 				self.state = 0
 			
@@ -83,7 +87,7 @@ class AntRobot(robot.Robot):
 		
 		# Navigate towards surface	
 		if ( self.state == 1 ):
-#		if ( self.load > self.config['max_load'] and self.rect.center[1] > (400-self.config['body_range']) ):
+#		if ( self.load > self.config['max_load'] and self.rect.center[1] > (self.SURFACE-self.config['body_range']) ):
 			while ( True ):
 				surf_action = self.behvr_go_to_surf.action()
 				rwalk_action = self.behvr_random_walk.action(2, -2, 1, -1)
@@ -105,7 +109,7 @@ class AntRobot(robot.Robot):
 				
 		# Release transported dirt
 		if ( self.state == 2 ):
-#		if ( self.load != 0 and self.rect.center[1] <= (400-self.config['body_range']) ):
+#		if ( self.load != 0 and self.rect.center[1] <= (self.SURFACE-self.config['body_range']) ):
 	
 			move_fail_cnt = 0
 			while ( True ):
@@ -152,7 +156,7 @@ class AntRobot(robot.Robot):
 				follow_pherom_action = self.behvr_follow_trail_pheromone.action(local_world, \
 					self.rect.center[0], self.rect.center[1], self.last_action)
 
-				if ( self.rect.center[1] <= (400-self.config['body_range'] ) ):	
+				if ( self.rect.center[1] <= (self.SURFACE-self.config['body_range'] ) ):	
 					if ( self.surf_orientation == 0 ):
 						surf_bias_action = self.behvr_go_left.action()
 					else:
@@ -335,7 +339,7 @@ class Behvr_PointRepulsion():
 
 
 class Behvr_SurfAttraction():
-	""" Usage: Behvr_SurfAttraction(400) """
+	""" Usage: Behvr_SurfAttraction(self.SURFACE) """
 	def __init__(self, surf_y_pos):
 		self.surf_y_pos = surf_y_pos
 	
