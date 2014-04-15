@@ -48,7 +48,7 @@ class sim:
 		# Init a empty matrix to store world
 		world = np.zeros(world_size)
 		# Specify the elevation of the surface
-		surface = int((world_size[1]/10.0)*4)
+		surface = int((world_size[1]*self.config['dirt_ratio']))
 		# Generate the dirt below the surface
 		world[:,surface:-1] = self.config['dirt']
 		# Set the bounds of the world with rock
@@ -76,7 +76,7 @@ class sim:
 				mask[np.where(self.world == value['id'])] = value['color']
 			pheromones = np.where(self.world > 0)
 			if(pheromones[0].size):
-				pheromone_colors = np.asarray(self.config['pheromone']['color'] * pheromones[0].size)
+				pheromone_colors = np.asarray([self.config['pheromone']['color']] * pheromones[0].size)
 				print pheromone_colors.shape
 				pheromone_colors[:,3] = self.world[pheromones]
 				mask[pheromones] = pheromone_colors
