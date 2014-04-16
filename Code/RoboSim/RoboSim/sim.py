@@ -16,6 +16,8 @@ class sim:
 	def __init__(self, robots, config):
 		self.config = config
 		self.robots = robots
+		self.it = 0
+		self.data = {'it': [], 'dig': [], 'dump': []}	
 		# Init pygame setup
 		pygame.init()
 		# set the window caption
@@ -77,7 +79,6 @@ class sim:
 			pheromones = np.where(self.world > 0)
 			if(pheromones[0].size):
 				pheromone_colors = np.asarray([self.config['pheromone']['color']] * pheromones[0].size)
-				print self.world[pheromones]
 				pheromone_colors[:,3] = np.clip(self.world[pheromones]*int((255-60)/255),0,255) + np.clip(self.world[pheromones], 0, 1)*60
 				mask[pheromones] = pheromone_colors
 			# Ajust the mask as to match the upright image background
@@ -97,11 +98,41 @@ class sim:
 		self.allrobots.draw(self.screen)
 		# Push the new frame to the display
 		pygame.display.flip()
+		
+	def log(self, flags):
+		'''Render the current state of the simulation'''
+		
+		if(flags['logging']):
+			
+			# Get the size of the world from the screen
+			world_size = self.world.shape
+			# Get a mask of all the dirt
+			dirt = self.world == self.config['dirt']
+			# Specify the elevation of the surface
+			surface = int((world_size[1]*self.config['dirt_ratio']))
+#			print "surface: ", surface 
+			# Get the aria of the ground or earth
+			area = ((world_size[1]-1) - surface) * (world_size[0]-2)
+#			print "area: ", area
+			# Get the dig count by taking the diffrence
+#			print "total dirt", dirt.sum()
+			digged = area - dirt[:,surface:-1].sum()
+#			print 'digged: ', digged
+			# Get the dump count above the surface
+			dumped = dirt[:,0:surface].sum()
+			# Stor the iteration number
+			self.data['it'].append(self.it)
+			# Stor the dig count
+			self.data['dig'].append(digged)
+			# Stor the dump count
+			self.data['dump'].append(dumped)
+			
+			if self.it > self.config['done_it']:	
+				flags['going'] = False
+			
 
 	def update(self, flags):
 		'''Update the current state of the simulation'''
-		# Set the flag by defult
-#		going = True
 		# Tic the clock acording to the fps speed
 		self.clock.tick(self.config['fps'])
 		
@@ -121,12 +152,14 @@ class sim:
 		self.allrobots.update(self.world, self.robots)
 		# Then render all of the changes
 		self.render(flags)
+		self.log(flags)
+		self.it += 1
 		# Return the state of the simulation
-#		return going
 
 	def quit(self):
 		'''Quite the simulation'''
 		pygame.quit()
+		return self.data
 
 	def load_image(self, name):
 		'''Load images for the simulation'''
