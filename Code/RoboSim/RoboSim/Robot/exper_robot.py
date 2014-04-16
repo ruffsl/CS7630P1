@@ -44,10 +44,12 @@ class exper_robot(robot.Robot):
 		self.DIGCOIN = -4
 		self.ROOM = -5
 		self.BRANCH = -6
+		self.SURFACE = 0
 		
 ### Behaviors and arbitration		
 		
 	def update(self, world, robots):
+		self.SURFACE = (world.shape[1]*self.config['dirt_ratio'])
 		self.vision = self.sense(world)
 		self.vision_2_feel(world)
 #		print 'State: ', self.state
@@ -71,7 +73,7 @@ class exper_robot(robot.Robot):
 		else:
 			self.wall_follow_state = -self.start_state
 			self.wall_follow(0,world)
-			if self.rect.center[1] >= 205:
+			if self.rect.center[1] >= self.SURFACE+5:
 				self.state = 1
 		
 	def wall_follow(self,direction, world):
@@ -200,7 +202,7 @@ class exper_robot(robot.Robot):
 			self.state = 2
 			self.dig_state = 0
 			
-		elif self.rect.center[1] < 220:
+		elif self.rect.center[1] < self.SURFACE+20:
 			self.move(0,1,world)
 			digs = self.dig(world)
 #			print 'Dig dig dig: ', digs
@@ -410,7 +412,7 @@ class exper_robot(robot.Robot):
 	def unload_dirt(self,world):
 #		print 'Sense:', self.touch, 'State:', self.unload_state
 		if self.unload_state == 0:
-			if self.rect.center[1] < 210:
+			if self.rect.center[1] < self.SURFACE+10:
 				self.unload_state = 1
 			else:
 				self.wall_follow(1, world)			#1 goes up
@@ -476,7 +478,7 @@ class exper_robot(robot.Robot):
 				self.wall_follow_state = -self.side # set priority
 		elif self.unload_state == 10:
 			self.wall_follow(0,world)		#anything not 1 goes down
-			if self.rect.center[1] > 210:		#back in tunnel
+			if self.rect.center[1] > self.SURFACE + 10:		#back in tunnel
 				self.unload_state = 0		#Reset unload
 				self.state = 3			#switch to explore mode
 			
