@@ -26,7 +26,6 @@ class exper_robot(robot.Robot):
 		self.explore_length = 0
 		self.room_size = 0
 		self.wall_length = 0
-		self.diagonal = 0
 		
 		#Sub states for behaviors
 		self.start_state = start
@@ -39,7 +38,7 @@ class exper_robot(robot.Robot):
 		self.escape_state = 0
 		
 		#Constants
-		self.DIG_PERSISTANCE = 30
+		self.DIG_PERSISTANCE = 10
 		self.EXPLORE_PERSISTANCE = 10
 		self.DIGCOIN = -4
 		self.ROOM = -5
@@ -50,7 +49,7 @@ class exper_robot(robot.Robot):
 	def update(self, world, robots):
 		self.vision = self.sense(world)
 		self.vision_2_feel(world)
-#		print 'State: ', self.state
+		print 'State: ', self.state
 		if self.state == 0:
 			self.start(world)
 		elif self.state == 1:
@@ -71,42 +70,58 @@ class exper_robot(robot.Robot):
 		else:
 			self.wall_follow_state = -self.start_state
 			self.wall_follow(0,world)
-			if self.rect.center[1] >= 205:
+			if self.rect.center[1] >= 420:
 				self.state = 1
 		
 	def wall_follow(self,direction, world):
 		if direction == 1:
 			if self.wall_follow_state == -1:	#Wall follow up left priority
-				if self.touch[0] == 0:
+				if self.touch[0] == 0 and self.touch[1] == 0 and self.touch[7] == 0:
 					self.move(0,-1,world)
-				elif self.touch[6] == 0:
+				elif self.touch[0] == 0 and self.touch[7] == 0 and self.touch[6] == 0:
+					self.move(-1,-1,world)
+				elif self.touch[0] == 0 and self.touch[1] == 0 and self.touch[2] == 0:
+					self.move(1,-1,world)
+				elif self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 					self.move(-1,0,world)
-				elif self.touch[2] == 0:
+				elif self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 					self.move(1,0,world)
 					self.wall_follow_state = 1
 			if self.wall_follow_state == 1:	#Wall follow up right priority
-				if self.touch[0] == 0:
+				if self.touch[0] == 0 and self.touch[1] == 0 and self.touch[7] == 0:
 					self.move(0,-1,world)
-				elif self.touch[2] == 0:
+				elif self.touch[0] == 0 and self.touch[7] == 0 and self.touch[6] == 0:
+					self.move(-1,-1,world)
+				elif self.touch[0] == 0 and self.touch[1] == 0 and self.touch[2] == 0:
+					self.move(1,-1,world)
+				elif self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 					self.move(1,0,world)
-				elif self.touch[6] == 0:
+				elif self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 					self.move(-1,0,world)
 					self.wall_follow_state = -1
 		else:
 			if self.wall_follow_state == -1:	#Wall follow down left priority
-				if self.touch[4] == 0:
+				if self.touch[4] == 0 and self.touch[5] == 0 and self.touch[3] == 0:
 					self.move(0,1,world)
-				elif self.touch[6] == 0:
+				elif self.touch[4] == 0 and self.touch[5] == 0 and self.touch[6] == 0:
+					self.move(-1,1,world)
+				elif self.touch[4] == 0 and self.touch[3] == 0 and self.touch[2] == 0:
+					self.move(1,1,world)
+				elif self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 					self.move(-1,0,world)
-				elif self.touch[2] == 0:
+				elif self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 					self.move(1,0,world)
 					self.wall_follow_state = 1
 			if self.wall_follow_state == 1:	#Wall follow down right priority
-				if self.touch[4] == 0:
+				if self.touch[4] == 0 and self.touch[5] == 0 and self.touch[3] == 0:
 					self.move(0,1,world)
-				elif self.touch[2] == 0:
+				elif self.touch[4] == 0 and self.touch[3] == 0 and self.touch[2] == 0:
+					self.move(1,1,world)
+				elif self.touch[4] == 0 and self.touch[5] == 0 and self.touch[6] == 0:
+					self.move(-1,1,world)
+				elif self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 					self.move(1,0,world)
-				elif self.touch[6] == 0:
+				elif self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 					self.move(-1,0,world)
 					self.wall_follow_state = -1
 					
@@ -124,11 +139,11 @@ class exper_robot(robot.Robot):
 
 		beacons = self.sense_beacon(self.DIGCOIN, 1, world)
 		if len(beacons[0]) >= 1:		#Found tunnel beacon
-			if noise > 700:
-				print 'laying branch'
-				self.lay_beacon(self.BRANCH, world)
+			if noise > 998:
+				print 'Branching tunnel'
+				self.lay_beacon(self.DIGCOIN, world)
 				self.state = 1
-			elif noise < 200:
+			elif noise < 996:
 				print 'Starting room'
 				self.lay_beacon(self.ROOM, world)
 				self.dig_room_state = 0
@@ -138,11 +153,6 @@ class exper_robot(robot.Robot):
 				self.state = 1			#Go to dig mode
 			return
 			
-		beacons = self.sense_beacon(self.BRANCH, 1, world)
-		if len(beacons[0]) >= 1:		#Found branch
-			print 'Making  branch'
-			self.state = 1
-			return
 			
 		if self.explore_state == 0:
 			if noise < 300:
@@ -160,39 +170,69 @@ class exper_robot(robot.Robot):
 				self.explore_state = 0
 			
 		if self.explore_state == 1:	#Wall follow down left priority
-			if self.touch[4] == 0:
+			if self.touch[4] == 0 and self.touch[5] == 0 and self.touch[3] == 0:
 				self.move(0,1,world)
 				self.x_dir = -1
-			elif self.touch[6] == 0:
+			elif self.touch[4] == 0 and self.touch[5] == 0 and self.touch[6] == 0:
+				self.move(-1,1,world)
+				self.x_dir = -1
+			elif self.touch[4] == 0 and self.touch[3] == 0 and self.touch[2] == 0:
+				self.move(1,1,world)
+				self.x_dir = 1
+			elif self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 				self.move(-1,0,world)
 				self.x_dir = -1
-			elif self.touch[2] == 0:
+			elif self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 				self.move(1,0,world)
 				self.x_dir = 1
 		elif self.explore_state == 2:	#Wall follow down right priority
-			if self.touch[4] == 0:
+			if self.touch[4] == 0 and self.touch[5] == 0 and self.touch[3] == 0:
 				self.move(0,1,world)
 				self.x_dir = 1
-			elif self.touch[2] == 0:
+			elif self.touch[4] == 0 and self.touch[3] == 0 and self.touch[2] == 0:
+				self.move(1,1,world)
+				self.x_dir = 1
+			elif self.touch[4] == 0 and self.touch[5] == 0 and self.touch[6] == 0:
+				self.move(-1,1,world)
+				self.x_dir = -1
+			elif self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 				self.move(1,0,world)
 				self.x_dir = 1
-			elif self.touch[6] == 0:
+			elif self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 				self.move(-1,0,world)
 				self.x_dir = -1
 		elif self.explore_state == 3:	#Wall follow left priority
-			if self.touch[6] == 0:
+			if self.touch[7] == 0 and self.touch[6] == 0 and self.touch[5] == 0:
 				self.move(-1,0,world)
 				self.x_dir = -1
-			elif self.touch[4] == 0:
+			elif self.touch[4] == 0 and self.touch[5] == 0 and self.touch[6] == 0:
+				self.move(-1,1,world)
+				self.x_dir = -1
+			elif self.touch[6] == 0 and self.touch[7] == 0 and self.touch[0] == 0:
+				self.move(-1,-1,world)
+				self.x_dir = -1
+			elif self.touch[5] == 0 and self.touch[4] == 0 and self.touch[3] == 0:
 				self.move(0,1,world)
 				self.x_dir = -1
+			elif self.touch[2] == 0 and self.touch[3] == 0 and self.touch[4] == 0:
+				self.move(1,1,world)
+				self.x_dir = 1
 		elif self.explore_state == 4:	#Wall follow right priority
-			if self.touch[2] == 0:
+			if self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
 				self.move(1,0,world)
 				self.x_dir = 1
-			elif self.touch[4] == 0:
+			elif self.touch[4] == 0 and self.touch[3] == 0 and self.touch[2] == 0:
+				self.move(1,1,world)
+				self.x_dir = 1
+			elif self.touch[0] == 0 and self.touch[1] == 0 and self.touch[2] == 0:
+				self.move(1,-1,world)
+				self.x_dir = 1
+			elif self.touch[5] == 0 and self.touch[4] == 0 and self.touch[3] == 0:
 				self.move(0,1,world)
 				self.x_dir = 1
+			elif self.touch[4] == 0 and self.touch[5] == 0 and self.touch[6] == 0:
+				self.move(-1,1,world)
+				self.x_dir = -1
 	
 	def dig_tunnel(self,world):
 		if self.load > self.config['max_load']:
@@ -219,23 +259,7 @@ class exper_robot(robot.Robot):
 				self.dig_state = 1
 				
 		elif self.dig_state == 1:		#Dig set direction for some distance
-			if self.x_dir == 0 or self.y_dir == 0:
-				self.move(self.x_dir,self.y_dir,world)
-				if self.touch[0] == 2 or self.touch[2] == 2 or self.touch[4] == 2 or self.touch[6] == 2:
-					self.move(-self.x_dir,-self.y_dir,world)
-					self.dig_state = 0
-			else:
-				if self.diagonal == 0:
-					self.move(self.x_dir,0,world)
-					self.diagonal = 1
-					if self.touch[0] == 2 or self.touch[2] == 2 or self.touch[4] == 2 or self.touch[6] == 2:
-						self.move(-self.x_dir,0,world)
-						self.dig_state = 0
-				else:
-					self.move(0,self.y_dir,world)
-					self.diagonal = 0
-					if self.touch[0] == 2 or self.touch[2] == 2 or self.touch[4] == 2 or self.touch[6] == 2:
-						self.move(0,-1,world)
+			self.move(self.x_dir,self.y_dir,world)
 			digs = self.dig(world)
 #			print 'Dig dig dig: ', digs
 			self.dig_length = self.dig_length + 1
@@ -323,44 +347,32 @@ class exper_robot(robot.Robot):
 				self.wall_length = 0
 				
 		elif self.dig_room_state == 7:		#move to center dirt
-			if self.diagonal == 0:
-				self.move(self.x_dir,0,world)
-				self.diagonal = 1
-			else:
-				self.move(0,1,world)
-				self.diagonal = 0
-				self.wall_length = self.wall_length+1
+			self.move(self.x_dir, 1, world)
 			self.dig(world)
+			self.wall_length = self.wall_length+1
 			if self.touch[4] == 1:
 				self.dig_room_state = 8
 				
 		elif self.dig_room_state == 8:		#clear out dirt
 			if self.wall_length >= self.room_size:
-				self.lay_beacon(self.DIGCOIN, world)
-				self.dig_room_state = 9
-			elif self.touch[0] == 1:
+				self.state = 5		#finished, leave
+			elif self.touch[7] == 1 or self.touch[0] == 1 or self.touch[1] == 1:
 				self.move(0,-1,world)
 				self.dig(world)
 				self.wall_length = self.wall_length-1
-			elif self.touch[3] == 1:
+			elif self.touch[2] == 1:
 				self.move(1,0,world)
 				self.dig(world)
-			elif self.touch[7] == 1:
+			elif self.touch[6] == 1:
 				self.move(-1,0,world)
 				self.dig(world)
-			else:
+			elif self.touch[4] == 1:
 				self.move(0,1,world)
 				self.dig(world)
 				self.wall_length = self.wall_length+1
-				
-		elif self.dig_room_state == 9:
-			beacons = self.sense_beacon(self.BRANCH, 1, world)
-			if len(beacons[0]) >= 1:		#Found exit
-				self.state = 3			#explore
-			elif self.touch[0] == 0:
-				self.move(0,-1,world)
-			elif self.touch[4-2*self.x_dir] == 0:
-				self.move(-self.x_dir,0,world)
+			else:
+				self.move(-1,0,world)
+				self.dig(world)
 			
 	def escape_room(self,world):
 		beacons = self.sense_beacon(self.ROOM, 0, world)
@@ -368,47 +380,41 @@ class exper_robot(robot.Robot):
 			self.state = 2			#unload
 			return
 #		print 'x_dir: ', self.x_dir, 'escape_state: ', self.escape_state
-		if self.dig_room_state == 8:
-			if self.touch[0] == 0:
+		if self.escape_state == 0:
+			if self.touch[1] == 0 and self.touch[2] == 0 and self.touch[3] == 0:
+				self.move(1,0,world)
+			else:
+				if self.x_dir == 1:
+					self.escape_state = 1
+				else:
+					self.escape_state = 3
+		elif self.escape_state == 1:
+			if self.touch[3] == 0 and self.touch[4] == 0 and self.touch[5] == 0:
+				self.move(0,1,world)
+			else:
+				if self.x_dir == 1:
+					self.escape_state = 2
+				else:
+					self.escape_state = 0
+		elif self.escape_state == 2:
+			if self.touch[5] == 0 and self.touch[6] == 0 and self.touch[7] == 0:
+				self.move(-1,0,world)
+			else:
+				if self.x_dir == 1:
+					self.escape_state = 3
+				else:
+					self.escape_state = 1
+		elif self.escape_state == 3:
+			if self.touch[7] == 0 and self.touch[0] == 0 and self.touch[1] == 0:
 				self.move(0,-1,world)
 			else:
-				self.move(-self.x_dir,0,world)
-		else:
-			if self.escape_state == 0:
-				if self.touch[2] == 0:
-					self.move(1,0,world)
+				if self.x_dir == 1:
+					self.escape_state = 0
 				else:
-					if self.x_dir == 1:
-						self.escape_state = 1
-					else:
-						self.escape_state = 3
-			elif self.escape_state == 1:
-				if self.touch[4] == 0:
-					self.move(0,1,world)
-				else:
-					if self.x_dir == 1:
-						self.escape_state = 2
-					else:
-						self.escape_state = 0
-			elif self.escape_state == 2:
-				if self.touch[6] == 0:
-					self.move(-1,0,world)
-				else:
-					if self.x_dir == 1:
-						self.escape_state = 3
-					else:
-						self.escape_state = 1
-			elif self.escape_state == 3:
-				if self.touch[0] == 0:
-					self.move(0,-1,world)
-				else:
-					if self.x_dir == 1:
-						self.escape_state = 0
-					else:
-						self.escape_state = 2
+					self.escape_state = 2
 				
 	def unload_dirt(self,world):
-#		print 'Sense:', self.touch, 'State:', self.unload_state
+		print 'Sense:', self.touch, 'State:', self.unload_state
 		if self.unload_state == 0:
 			if self.rect.center[1] < 210:
 				self.unload_state = 1
@@ -424,21 +430,21 @@ class exper_robot(robot.Robot):
 				self.unload_state = 2
 		elif self.unload_state == 2:				#Go to surface
 #			print self.touch[6]
-			if self.touch[7] == 1 and self.touch[3] == 1:
+			if self.touch[6] == 1 and self.touch[2] == 1:
 				self.move(0,-1,world)
-			elif self.touch[7] == 0:
+			elif self.touch[6] == 0:
 				self.side = -1
 				self.move(-1,0,world)
 				self.unload_state = 3
-			elif self.touch[3] == 0:
+			elif self.touch[2] == 0:
 				self.side = 1
 				self.move(1,0,world)
 				self.unload_state = 3
 		elif self.unload_state == 3:				#Move on top
-#			print 'bottom = ', self.touch[5]
-			if self.touch[5] == 0:
+			print 'bottom = ', self.touch[4]
+			if self.touch[4] == 0:
 				self.move(self.side,-1,world)
-			elif self.touch[5] == 1:
+			elif self.touch[4] == 1:
 				self.unload_state = 4
 		elif self.unload_state == 4:				
 			drops = np.array([self.rel_pt(0,4),self.rel_pt(0,-4)])
@@ -467,7 +473,7 @@ class exper_robot(robot.Robot):
 			if self.touch[4+2*self.side] == 0:
 				self.unload_state = 9
 		elif self.unload_state == 9:
-			if self.touch[4+2*self.side] == 1:
+			if self.touch[4+self.side] == 1:
 				self.move(-self.side,-1,world)
 			elif self.touch[4] == 0:
 				self.move(-self.side,0,world)
@@ -506,13 +512,13 @@ class exper_robot(robot.Robot):
 		else:
 			self.touch[0] = 0
 			
-		#precise top
-		if self.vision[self.rel_pt(0,-5)] == -1:
-			self.touch[1] = 1
-		elif self.vision[self.rel_pt(0,-5)] == -2:
-			self.touch[1] = 2
-		else:
-			self.touch[1] = 0
+		#Top right -> 1
+#		if  self.vision[self.rel_pt(3,-4)] == -1 or self.vision[self.rel_pt(4,-3)] == -1:
+#			self.touch[1] = 1
+#		elif self.vision[self.rel_pt(3,-4)] == -2 or self.vision[self.rel_pt(4,-3)] == -2:
+#			self.touch[1] = 2
+#		else:
+#			self.touch[1] = 0
 			
 		#right -> 2
 		if self.vision[self.rel_pt(5,0)] == -1 or self.vision[self.rel_pt(5,1)] == -1 or self.vision[self.rel_pt(5,2)] == -1 or self.vision[self.rel_pt(5,-1)] == -1 or self.vision[self.rel_pt(5,-2)] == -1:
@@ -526,13 +532,13 @@ class exper_robot(robot.Robot):
 		else:
 			self.touch[2] = 0
 
-		#precise right
-		if self.vision[self.rel_pt(5,0)] == -1:
-			self.touch[3] = 1
-		elif self.vision[self.rel_pt(5,0)] == -2:
-			self.touch[3] = 2
-		else:
-			self.touch[3] = 0
+		#bot right -> 3
+#		if  self.vision[self.rel_pt(3,4)] == -1 or self.vision[self.rel_pt(4,3)] == -1:
+#			self.touch[3] = 1
+#		elif self.vision[self.rel_pt(3,4)] == -2 or self.vision[self.rel_pt(4,3)] == -2:
+#			self.touch[3] = 2
+#		else:
+#			self.touch[3] = 0	
 		
 		#bot -> 4
 		if self.vision[self.rel_pt(0,5)] == -1 or self.vision[self.rel_pt(1,5)] == -1 or self.vision[self.rel_pt(2,5)] == -1 or self.vision[self.rel_pt(-1,5)] == -1 or self.vision[self.rel_pt(-2,5)] == -1:
@@ -546,13 +552,13 @@ class exper_robot(robot.Robot):
 		else:
 			self.touch[4] = 0
 			
-		#precise bot
-		if self.vision[self.rel_pt(0,5)] == -1:
-			self.touch[5] = 1
-		elif self.vision[self.rel_pt(0,5)] == -2:
-			self.touch[5] = 2
-		else:
-			self.touch[5] = 0
+		#bot left -> 5
+#		if  self.vision[self.rel_pt(-3,4)] == -1 or self.vision[self.rel_pt(-4,3)] == -1:
+#			self.touch[5] = 1
+#		elif self.vision[self.rel_pt(-3,4)] == -2 or self.vision[self.rel_pt(-4,3)] == -2:
+#			self.touch[5] = 2
+#		else:
+#			self.touch[5] = 0
 			
 		#left -> 6
 		if self.vision[self.rel_pt(-5,0)] == -1 or self.vision[self.rel_pt(-5,1)] == -1 or self.vision[self.rel_pt(-5,2)] == -1 or self.vision[self.rel_pt(-5,-1)] == -1 or self.vision[self.rel_pt(-5,-2)] == -1:
@@ -566,13 +572,13 @@ class exper_robot(robot.Robot):
 		else:
 			self.touch[6] = 0
 			
-		#precise left
-		if self.vision[self.rel_pt(-5,0)] == -1:
-			self.touch[7] = 1
-		elif self.vision[self.rel_pt(-5,0)] == -2:
-			self.touch[7] = 2
-		else:
-			self.touch[7] = 0
+		#top left -> 7
+#		if  self.vision[self.rel_pt(-3,-4)] == -1 or self.vision[self.rel_pt(-4,-3)] == -1:
+#			self.touch[7] = 1
+#		elif self.vision[self.rel_pt(-3,-4)] == -2 or self.vision[self.rel_pt(-4,-3)] == -2:
+#			self.touch[7] = 2
+#		else:
+#			self.touch[7] = 0
 
 	def stop(self,world):
 		return 1
