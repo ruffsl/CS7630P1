@@ -23,6 +23,8 @@ class AntRobot(robot.Robot):
 		self.last_pos = np.zeros((2, 1), dtype=int)
 		self.impatience = 0
 		
+		self.SURFACE = 0
+		
 		rand.seed()
 
 		# Instantiate behavior objects
@@ -32,7 +34,7 @@ class AntRobot(robot.Robot):
 		self.behvr_go_right = Behvr_DirectionalBias(1, 0, 1)
 		self.behvr_random_walk = Behvr_RandomWalk()
 		self.behvr_avoid_past = Behvr_AvoidPast()
-#		self.behvr_surf_attract = Behvr_SurfAttraction((400-self.config['body_range']))
+#		self.behvr_surf_attract = Behvr_SurfAttraction((self.SURFACE-self.config['body_range']))
 		self.behvr_unload_dirt = Behvr_UnloadDirt(0.4, self.config['body_range'])
 		self.behvr_lay_trail_pheromone = Behvr_LayTrailPheromone(1)
 		self.behvr_follow_trail_pheromone = Behvr_FollowTrailPheromone()
@@ -42,12 +44,14 @@ class AntRobot(robot.Robot):
 		self.counter = 0
 
 	def update(self, world, robots):
+		self.SURFACE = (world.shape[1]*self.config['dirt_ratio'])		
+		
 		local_world = self.sense(world)
 		# local_world = np.array([0, 0])
 
 		if ( self.state == 0 and self.load >= self.config['max_load'] ):
 			self.state = 1
-		elif ( self.state == 1 and self.rect.center[1] <= (400-self.config['body_range']-4) ):
+		elif ( self.state == 1 and self.rect.center[1] <= (self.SURFACE-self.config['body_range']-4) ):
 			self.last_action = np.zeros((2, 1), dtype=float)
 			if ( rand.random() < 0.5 ):
 				self.surf_orientation = 0
@@ -61,7 +65,7 @@ class AntRobot(robot.Robot):
 			else:
 				self.surf_orientation = 0
 			self.state = 3
-		elif ( self.state == 3 and self.rect.center[1] > 400 ):
+		elif ( self.state == 3 and self.rect.center[1] > self.SURFACE ):
 			if ( rand.random() < 0.05 or self.impatience > 20 ):
 				self.state = 0
 			
@@ -83,7 +87,7 @@ class AntRobot(robot.Robot):
 		
 		# Navigate towards surface	
 		if ( self.state == 1 ):
-#		if ( self.load > self.config['max_load'] and self.rect.center[1] > (400-self.config['body_range']) ):
+#		if ( self.load > self.config['max_load'] and self.rect.center[1] > (self.SURFACE-self.config['body_range']) ):
 			while ( True ):
 				surf_action = self.behvr_go_to_surf.action()
 				rwalk_action = self.behvr_random_walk.action(2, -2, 1, -1)
@@ -105,8 +109,9 @@ class AntRobot(robot.Robot):
 				
 		# Release transported dirt
 		if ( self.state == 2 ):
-#		if ( self.load != 0 and self.rect.center[1] <= (400-self.config['body_range']) ):
+#		if ( self.load != 0 and self.rect.center[1] <= (self.SURFACE-self.config['body_range']) ):
 	
+			move_fail_cnt = 0
 			while ( True ):
 				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
 #				avoidp_action = self.behvr_avoid_past.action(self.last_action)
@@ -114,18 +119,24 @@ class AntRobot(robot.Robot):
 					surf_bias_action = self.behvr_go_left.action()
 				else:
 					surf_bias_action = self.behvr_go_right.action()
-				print 'AntRobot()::update - State: ' + str(self.state)  + ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)		
+				print ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
 				
 				action_list = np.concatenate(([rwalk_action], [surf_bias_action]), 0)
 				gain_list = np.array([2, 5])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
 				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
-				
+								
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				if ( self.collision(world, robots) ):
-					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					move_fail_cnt += 1
+					if ( move_fail_cnt > 20 ):
+						self.dig(world)
+						break
+					else:
+						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)						
 				else:
-					break	
+					break
 
 			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])		
 			
@@ -139,12 +150,13 @@ class AntRobot(robot.Robot):
 		if ( self.state == 3 ):
 			local_world = self.sense(world)
 			
+			move_fail_cnt = 0
 			while ( True ):
-				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
+				rwalk_action = self.behvr_random_walk.action(1, -1, 2, -2)
 				follow_pherom_action = self.behvr_follow_trail_pheromone.action(local_world, \
 					self.rect.center[0], self.rect.center[1], self.last_action)
 
-				if ( self.rect.center[1] <= (400-self.config['body_range'] ) ):	
+				if ( self.rect.center[1] <= (self.SURFACE-self.config['body_range'] ) ):	
 					if ( self.surf_orientation == 0 ):
 						surf_bias_action = self.behvr_go_left.action()
 					else:
@@ -153,7 +165,7 @@ class AntRobot(robot.Robot):
 					print ' R-Walk Action: ' + str(rwalk_action) + ' Follow Pherom. Action: ' + str(follow_pherom_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
 					
 					action_list = np.concatenate(([rwalk_action], [follow_pherom_action], [surf_bias_action]), 0)
-					gain_list = np.array([1, 3, 8])
+					gain_list = np.array([8, 2, 10])
 					arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
 					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
 				else:
@@ -167,14 +179,21 @@ class AntRobot(robot.Robot):
 				
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				if ( self.collision(world, robots) ):
-					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					move_fail_cnt += 1
+					if ( move_fail_cnt > 20 ):
+						self.dig(world)
+						self.state = 0
+						break
+					else:
+						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)						
 				else:
-					break	
+					break
 
 			if ( np.all( self.rect.center == self.last_pos ) ):
-				self.impatience += 1
-			else:
-				self.impatience = 0
+				self.impatience += 2
+			elif ( self.impatience > 0 ):
+				self.impatience -= 1
+			print 'self.impatience = ' + str(self.impatience)
 
 			self.last_action = arb_res			
 			self.last_pos = self.rect.center
@@ -320,7 +339,7 @@ class Behvr_PointRepulsion():
 
 
 class Behvr_SurfAttraction():
-	""" Usage: Behvr_SurfAttraction(400) """
+	""" Usage: Behvr_SurfAttraction(self.SURFACE) """
 	def __init__(self, surf_y_pos):
 		self.surf_y_pos = surf_y_pos
 	

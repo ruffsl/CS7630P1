@@ -26,7 +26,8 @@ config = {'fps': 500,
 			'unknown':		-3,
 			'empty':			 0,
 			'beacons':		beacons,
-			'pheromone': 	pheromone}
+			'pheromone': 	pheromone,
+			'dirt_ratio':	4/10.0}
 
 #import everything
 import os
@@ -43,6 +44,7 @@ def main():
 	config['path'] = os.path.split(os.path.abspath(__file__))[0]
 	# Init Robots with config
 #	myRobot = robot.Robot((500,500), config)
+#	myRobot = etholog_robots.AntRobot((250,195), config)
 	myRobot = exper_robot.exper_robot((250,195), config, 0)
 	myRobot2 = exper_robot.exper_robot((270,195), config, 1)
 	robots = [myRobot, myRobot2]
