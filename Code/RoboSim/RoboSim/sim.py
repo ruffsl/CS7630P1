@@ -129,7 +129,13 @@ class sim:
 			
 			if self.it > self.config['done_it']:	
 				flags['going'] = False
-			
+
+	def decay(self, flags):
+		if not (self.it % self.config['half_life']):
+			pheromones = np.where(self.world > 0)
+			if(pheromones[0].size):
+				pheromone_values = int(self.world[pheromones]*(0.5))
+				self.world[pheromones] = pheromone_values
 
 	def update(self, flags):
 		'''Update the current state of the simulation'''
@@ -147,6 +153,9 @@ class sim:
 					flags['render'] = not flags['render'] 
 					print "render: ", flags['render']
 		#End of event loop#########################
+		
+		# Decay phermones
+		self.decay(flags)
 
 		# Now update all the robots
 		self.allrobots.update(self.world, self.robots)

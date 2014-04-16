@@ -30,6 +30,7 @@ config = {'fps': 200,
 			'pheromone': 	pheromone,
 			'dirt_ratio':	4/10.0,
 			'done_ratio':	1.5/100.0,
+			'half_life':	10,
 			'done_it':	2000}
 
 #import everything
