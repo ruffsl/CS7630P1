@@ -265,8 +265,8 @@ class exper_robot(robot.Robot):
 			elif self.x_dir < -1:
 				self.x_dir = -1
 			self.y_dir = random.randint(0,1)
-			if self.y_dir == -1:
-				self.y_dir = 1
+#			if self.y_dir == -1:
+#				self.y_dir = 1
 #			self.y_dir = 1
 #			self.x_dir = 0
 			if self.x_dir == 0 and self.y_dir == 0:

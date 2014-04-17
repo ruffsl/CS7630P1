@@ -126,4 +126,4 @@ class Robot(pygame.sprite.Sprite):
 		if self.old_load == self.load:
 			return 0
 		else:
-			return 0
+			return 1
