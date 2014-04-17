@@ -40,7 +40,7 @@ class exper_robot(robot.Robot):
 		
 		#Constants
 		self.DIG_PERSISTANCE = 30
-		self.EXPLORE_PERSISTANCE = 10
+		self.EXPLORE_PERSISTANCE = 15
 		self.DIGCOIN = -4
 		self.ROOM = -5
 		self.BRANCH = -6
@@ -135,7 +135,7 @@ class exper_robot(robot.Robot):
 				print 'laying branch'
 				self.lay_beacon(self.BRANCH, world)
 				self.state = 1
-			elif noise < 300:
+			elif noise < 250:
 				print 'Starting room'
 				self.lay_beacon(self.ROOM, world)
 				self.dig_room_state = 0
@@ -170,6 +170,7 @@ class exper_robot(robot.Robot):
 			
 		if self.explore_state == 1:	#Wall follow down left priority
 			self.wall_follow(0,world)
+			self.x_dir = -1
 #			if self.touch[4] == 0:
 #				self.move(0,1,world)
 #				self.x_dir = -1
@@ -181,6 +182,7 @@ class exper_robot(robot.Robot):
 #				self.x_dir = 1
 		elif self.explore_state == 2:	#Wall follow down right priority
 			self.wall_follow(0,world)
+			self.x_dir = 1
 #			if self.touch[4] == 0:
 #				self.move(0,1,world)
 #				self.x_dir = 1
@@ -227,9 +229,9 @@ class exper_robot(robot.Robot):
 			elif self.x_dir < -1:
 				self.x_dir = -1
 			self.y_dir = random.randint(0,1)
-			if self.y_dir == -1:
-				self.y_dir = 1
-#			self.y_dir = 1
+#			if self.y_dir == -1:
+#				self.y_dir = 1
+#			self.y_dir = 0
 			if self.x_dir == 0 and self.y_dir == 0:
 				self.dig_state = 0
 			else:

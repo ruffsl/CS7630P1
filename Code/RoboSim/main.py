@@ -32,7 +32,9 @@ config = {'fps': 200,
 			'dirt_ratio':	4/10.0,
 			'done_ratio':	1.5/100.0,
 			'half_life':	10,
-			'done_it':	2000}
+			'done_it':		2000,
+			'trials':		3,
+			'tag':			None}
 
 #import everything
 import os
@@ -41,6 +43,8 @@ from RoboSim.Robot import etholog_robots
 from RoboSim.Robot import robot
 from RoboSim import sim
 import pandas as pd
+import matplotlib.pyplot as plt
+import time
 
 
 ###########################################
@@ -71,7 +75,7 @@ def trial(mode):
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	
-	# Progress flag
+	# Progress flags
 	going = True
 	render = False
 	logging = True
@@ -82,24 +86,39 @@ def trial(mode):
 		mainSim.update(flags)
 	# Quit simulation and close window
 	data = mainSim.quit() #also calls display.quit()
+	# Return the data
 	return data
 	
-def to_file(data, i, mode, tag):
+def to_file(data, world, i, mode, tag):
+	'''Save the logged data to disk'''
+	# Get the path of the Data folder
 	path = os.path.abspath(__file__ + "/../../../")
 	path += '/Data/' + mode + '/'
-	file_name =  mode + tag + '_trail_%d.csv' % i
-	print path + file_name
+	# Make a filename
+	file_name =  mode + '_' + tag + '_trail_%d' % i
+	# Save the logs to a csv file for later
 	df = pd.DataFrame(data) 
-	df.to_csv(path + file_name, index=False)
+	df.to_csv(path + file_name + '.csv', index=False)
+	# Get a mask of just the dirt
+	world = world.T != config['dirt']
+	# Save the world to a black and white image
+	plt.imsave(path + file_name + '.png', world, cmap=plt.cm.gray)
+	# Print that the file is saved
+	print "Saved: ", path + file_name
 	
 def main():
 #	mode = 'etholog'
 	mode = 'exper'
-	tag = ''
-	for i in range(1):
-		data = trial(mode)
-#		to_file(data, i, mode, tag)
-	
+	# Custome naming tad
+	tag = config['tag']
+	# If none given
+	if not (tag):
+		# Then use the current time stamp
+		tag = time.strftime("%Y%m%d-%H%M%S")
+	# Simulate and log each trial
+	for i in range(config['trials']):
+		data, world = trial(mode)
+		to_file(data, world, i, mode, tag)
 
 if __name__ == '__main__':
     main()

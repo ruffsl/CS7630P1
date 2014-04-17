@@ -170,7 +170,7 @@ class sim:
 	def quit(self):
 		'''Quite the simulation'''
 		pygame.quit()
-		return self.data
+		return self.data, self.world
 
 	def load_image(self, name):
 		'''Load images for the simulation'''
