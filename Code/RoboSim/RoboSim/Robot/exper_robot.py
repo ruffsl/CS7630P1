@@ -414,7 +414,7 @@ class exper_robot(robot.Robot):
 			beacons = self.sense_beacon(self.ROOM, 1, world)
 			if len(beacons[0]) >= 1:		#Found exit
 				self.state = 3			#explore
-			elif self.touch[4-2*self.x_dir] == 0:
+			elif self.touch[4+2*self.x_dir] == 0:
 				self.move(-self.x_dir,0,world)
 				self.wall_length = self.wall_length + 1
 			elif self.touch[0] == 0:
