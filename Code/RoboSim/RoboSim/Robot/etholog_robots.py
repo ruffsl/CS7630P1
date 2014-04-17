@@ -56,6 +56,8 @@ class AntRobot(robot.Robot):
 		self.counter = 0
 
 	def update(self, world, robots):
+		super(AntRobot, self).update(world, robots)
+		
 		self.SURFACE = (world.shape[1]*self.config['dirt_ratio'])	
 
 		self.update_impatience()
@@ -165,7 +167,7 @@ class AntRobot(robot.Robot):
 #				print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
 				
 				action_list = np.concatenate(([grav_action], [rwalk_action]), 0)
-				gain_list = np.array([3, 4])
+				gain_list = np.array([4, 4])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
 #				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 				
@@ -223,8 +225,10 @@ class AntRobot(robot.Robot):
 				else:
 					break
 
-				print 'AntRobot()::update - Surface Action: ' + str(surf_action) + ' R-Walk Action: ' + str(rwalk_action)
-				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
+			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])
+
+			print 'AntRobot()::update - Surface Action: ' + str(surf_action) + ' R-Walk Action: ' + str(rwalk_action)
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
 				
 		# Release transported dirt
 		if ( self.state == 2 ):
