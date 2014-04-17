@@ -16,6 +16,7 @@ class Robot(pygame.sprite.Sprite):
 		self.config = config
 		self.collided = False			#Might need to check this attribute before move is called
 		self.load = 0
+		self.old_load = 0
 		
 		# Set the robot image from the config
 		self.image  = self.load_image(self.config['r_image'])
@@ -78,6 +79,7 @@ class Robot(pygame.sprite.Sprite):
 	@abc.abstractmethod	
 	def update(self, world, robots):
 		'''Update method all robots must implement'''
+		self.old_load = self.load
 		return None
 
 	@abc.abstractmethod	
@@ -119,3 +121,9 @@ class Robot(pygame.sprite.Sprite):
 		self.load -= drops.shape[0]
 		# return the number of real drops made
 		return drops.shape[0]
+	
+	def is_employed(self):
+		if self.old_load == self.load:
+			return 0
+		else:
+			return 0
