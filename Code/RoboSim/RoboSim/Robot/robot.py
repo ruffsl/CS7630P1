@@ -80,6 +80,7 @@ class Robot(pygame.sprite.Sprite):
 		'''Update method all robots must implement'''
 		return None
 
+	@abc.abstractmethod	
 	def move(self,dx,dy,world):
 		'''Move robot by a given delta'''
 		self.rect = self.rect.move(dx,dy)

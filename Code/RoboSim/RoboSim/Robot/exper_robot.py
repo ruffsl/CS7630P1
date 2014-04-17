@@ -129,26 +129,62 @@ class exper_robot(robot.Robot):
 			self.state = 4			#Go to dig mode
 			return
 
-		beacons = self.sense_beacon(self.DIGCOIN, 1, world)
+		beacons = self.sense_beacon(self.DIGCOIN, 0, world)
 		if len(beacons[0]) >= 1:		#Found tunnel beacon
-			if noise > 600:
-				print 'laying branch'
-				self.lay_beacon(self.BRANCH, world)
-				self.state = 1
-			elif noise < 250:
-				print 'Starting room'
-				self.lay_beacon(self.ROOM, world)
-				self.dig_room_state = 0
-				self.state = 4
+			if beacons[0][0] > self.rect.center[0]:
+				x_val =1
+			elif beacons[0][0] < self.rect.center[0]:
+				x_val = -1
 			else:
-				print 'Continuing tunnel'
-				self.state = 1			#Go to dig mode
+				x_val = 0
+				
+			if beacons[1][0] > self.rect.center[1]:
+				y_val =1
+			elif beacons[1][0] < self.rect.center[1]:
+				y_val = -1
+			else:
+				y_val = 0
+				
+			if x_val == 0 and y_val == 0:
+				beacons = self.sense_beacon(self.DIGCOIN, 1, world)
+				if noise > 750:
+					print 'laying branch'
+					self.lay_beacon(self.BRANCH, world)
+					self.state = 1
+				elif noise < 250: #250
+					print 'Starting room'
+					self.lay_beacon(self.ROOM, world)
+					self.dig_room_state = 0
+					self.state = 4
+				else:
+					print 'Continuing tunnel'
+					self.state = 1			#Go to dig mode
+			else:
+				self.move(x_val, y_val, world)
 			return
 			
-		beacons = self.sense_beacon(self.BRANCH, 1, world)
+		beacons = self.sense_beacon(self.BRANCH, 0, world)
 		if len(beacons[0]) >= 1:		#Found branch
-			print 'Making  branch'
-			self.state = 1
+			if beacons[0][0] > self.rect.center[0]:
+				x_val =1
+			elif beacons[0][0] < self.rect.center[0]:
+				x_val = -1
+			else:
+				x_val = 0
+				
+			if beacons[1][0] > self.rect.center[1]:
+				y_val =1
+			elif beacons[1][0] < self.rect.center[1]:
+				y_val = -1
+			else:
+				y_val = 0
+				
+			if x_val == 0 and y_val == 0:
+				beacons = self.sense_beacon(self.BRANCH, 1, world)
+				print 'Making  branch'
+				self.state = 1
+			else:
+				self.move(x_val, y_val, world)
 			return
 			
 		if self.explore_state == 0:
@@ -229,9 +265,10 @@ class exper_robot(robot.Robot):
 			elif self.x_dir < -1:
 				self.x_dir = -1
 			self.y_dir = random.randint(0,1)
-#			if self.y_dir == -1:
-#				self.y_dir = 1
-#			self.y_dir = 0
+			if self.y_dir == -1:
+				self.y_dir = 1
+#			self.y_dir = 1
+#			self.x_dir = 0
 			if self.x_dir == 0 and self.y_dir == 0:
 				self.dig_state = 0
 			else:
@@ -377,11 +414,13 @@ class exper_robot(robot.Robot):
 			beacons = self.sense_beacon(self.ROOM, 1, world)
 			if len(beacons[0]) >= 1:		#Found exit
 				self.state = 3			#explore
-			elif self.touch[0] == 0:
-				self.move(0,-1,world)
 			elif self.touch[4-2*self.x_dir] == 0:
 				self.move(-self.x_dir,0,world)
-			else:						#beacon all ready taken
+				self.wall_length = self.wall_length + 1
+			elif self.touch[0] == 0:
+				self.wall_length = self.wall_length + 1
+				self.move(0,-1,world)
+			elif self.wall_length > 2*self.room_size+5:			#beacon all ready taken
 				self.state = 3
 			
 	def escape_room(self,world):
@@ -510,6 +549,22 @@ class exper_robot(robot.Robot):
 				self.state = 3			#switch to explore mode
 			
 ### Functions for exper_robot unique actions				
+				
+	def move(self,dx,dy,world):
+		x_bound = world.shape[0]
+		y_bound = world.shape[1]
+		
+		cur_pos = self.rect.center
+		within_bounds = not( cur_pos[0] > x_bound-2-self.config['body_range'] \
+			or cur_pos[0] < self.config['body_range']+1 \
+			or cur_pos[1] > y_bound-2-self.config['body_range'] \
+			or cur_pos[1] < self.config['body_range']+1 )
+	
+		if within_bounds:
+			self.rect = self.rect.move(dx,dy)
+		else:
+			print 'Tried to move out of bounds'
+		return None				
 				
 	def lay_beacon(self, value, world):
 		world[self.rect.center[0],self.rect.center[1]] = value

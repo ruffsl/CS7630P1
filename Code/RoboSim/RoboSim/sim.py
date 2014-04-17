@@ -165,6 +165,7 @@ class sim:
 		self.render(flags)
 		self.log(flags)
 		self.it += 1
+		print self.it
 		# Return the state of the simulation
 
 	def quit(self):
