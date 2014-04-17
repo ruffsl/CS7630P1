@@ -31,9 +31,12 @@ config = {'fps': 200,
 			'pheromone': 	pheromone,
 			'dirt_ratio':	4/10.0,
 			'done_ratio':	1.5/100.0,
-			'half_life':	10,
+			'half_life':	250,
 			'done_it':		2000,
 			'trials':		3,
+			'n':				1,
+#			'mode':			'exper',
+			'mode':			'etholog',
 			'tag':			None}
 
 #import everything
@@ -56,22 +59,39 @@ def trial(mode):
 #	myRobot = robot.Robot((500,500), config)
 #	myRobot = exper_robot.exper_robot((250,195), config, 0)
 	if mode == 'etholog':
-		myRobot1 = etholog_robots.AntRobot((200,195), config)
-		myRobot2 = etholog_robots.AntRobot((250,195), config)
-		myRobot3 = etholog_robots.AntRobot((300,195), config)
-		robots = [myRobot1, myRobot2, myRobot3]
+		if config['n'] == 5:
+			myRobot1 = etholog_robots.AntRobot((200,195), config)
+			myRobot2 = etholog_robots.AntRobot((250,195), config)
+			myRobot3 = etholog_robots.AntRobot((300,195), config)
+			myRobot4 = 0
+			myRobot5 = 0
+			robots = [myRobot1, myRobot2, myRobot3, myRobot4, myRobot5]
+		if config['n'] == 3:
+			myRobot1 = etholog_robots.AntRobot((200,195), config)
+			myRobot2 = etholog_robots.AntRobot((250,195), config)
+			myRobot3 = etholog_robots.AntRobot((300,195), config)
+			robots = [myRobot1, myRobot2, myRobot3]
+		if config['n'] == 1:
+			myRobot1 = etholog_robots.AntRobot((200,195), config)
+			robots = [myRobot1]
+			
 	elif mode == 'exper':
-		myRobot = exper_robot.exper_robot((250,195), config, 0)
-		myRobot2 = exper_robot.exper_robot((270,195), config, 1)
-		myRobot3 = exper_robot.exper_robot((210,195), config, -1)
-		myRobot4 = exper_robot.exper_robot((310,195), config, 1)
-		myRobot5 = exper_robot.exper_robot((320,195), config, 1)
-#		myRobot = exper_robot.exper_robot((450,395), config, 0)
-#		myRobot2 = exper_robot.exper_robot((470,395), config, 1)
-#		myRobot3 = exper_robot.exper_robot((410,395), config, -1)
-#		myRobot4 = exper_robot.exper_robot((510,395), config, 1)
-#		myRobot5 = exper_robot.exper_robot((520,395), config, 1)
-		robots = [myRobot, myRobot2, myRobot3, myRobot4, myRobot5]
+		if config['n'] == 5:
+			myRobot1 = exper_robot.exper_robot((250,195), config, 0)
+			myRobot2 = exper_robot.exper_robot((270,195), config, 1)
+			myRobot3 = exper_robot.exper_robot((210,195), config, -1)
+			myRobot4 = exper_robot.exper_robot((310,195), config, 1)
+			myRobot5 = exper_robot.exper_robot((320,195), config, 1)
+			robots = [myRobot1, myRobot2, myRobot3, myRobot4, myRobot5]
+		if config['n'] == 3:
+			myRobot1 = exper_robot.exper_robot((250,195), config, 0)
+			myRobot2 = exper_robot.exper_robot((270,195), config, 1)
+			myRobot3 = exper_robot.exper_robot((210,195), config, -1)
+			robots = [myRobot1, myRobot2, myRobot3]
+		if config['n'] == 1:
+			myRobot1 = exper_robot.exper_robot((250,195), config, 0)
+			robots = [myRobot1]
+			
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	
@@ -107,8 +127,7 @@ def to_file(data, world, i, mode, tag):
 	print "Saved: ", path + file_name
 	
 def main():
-#	mode = 'etholog'
-	mode = 'exper'
+	mode = config['mode']
 	# Custome naming tad
 	tag = config['tag']
 	# If none given

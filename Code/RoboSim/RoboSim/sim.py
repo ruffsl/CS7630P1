@@ -17,7 +17,7 @@ class sim:
 		self.config = config
 		self.robots = robots
 		self.it = 0
-		self.data = {'it': [], 'dig': [], 'dump': []}	
+		self.data = {'it': [], 'dig': [], 'dump': [], 'employment': []}	
 		# Init pygame setup
 		pygame.init()
 		# set the window caption
@@ -118,6 +118,12 @@ class sim:
 #			print "total dirt", dirt.sum()
 			digged = area - dirt[:,surface:-1].sum()
 #			print 'digged: ', digged
+			
+			employment = 0.0
+			for robot in self.robots:
+				employment += robot.is_employed()
+			employment /= len(self.robots)
+			
 			# Get the dump count above the surface
 			dumped = dirt[:,0:surface].sum()
 			# Stor the iteration number
@@ -126,6 +132,8 @@ class sim:
 			self.data['dig'].append(digged)
 			# Stor the dump count
 			self.data['dump'].append(dumped)
+			# Stor the employment
+			self.data['employment'].append(employment)
 			
 			if self.it > self.config['done_it']:	
 				flags['going'] = False
