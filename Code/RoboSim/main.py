@@ -32,7 +32,7 @@ config = {'fps': 200,
 			'dirt_ratio':	4/10.0,
 			'done_ratio':	1.5/100.0,
 			'half_life':	10,
-			'done_it':	2000}
+			'done_it':	10000}
 
 #import everything
 import os
@@ -98,7 +98,7 @@ def main():
 	tag = ''
 	for i in range(1):
 		data = trial(mode)
-#		to_file(data, i, mode, tag)
+		to_file(data, i, mode, tag)
 	
 
 if __name__ == '__main__':
