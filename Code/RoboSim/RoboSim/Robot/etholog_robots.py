@@ -44,10 +44,12 @@ class AntRobot(robot.Robot):
 		self.behvr_random_walk = Behvr_RandomWalk()
 #		self.behvr_avoid_past = Behvr_AvoidPast()
 #		self.behvr_surf_attract = Behvr_SurfAttraction((self.SURFACE-self.config['body_range']))
-		self.behvr_unload_dirt = Behvr_UnloadDirt(0.4, self.config['body_range'])
-		self.behvr_lay_trail_pheromone = Behvr_LayTrailPheromone(1)
+		self.behvr_unload_dirt = Behvr_UnloadDirt(0.8, self.config['body_range'])
+		self.behvr_lay_trail_pheromone = Behvr_LayTrailPheromone(10)
 		self.behvr_follow_trail_pheromone = Behvr_FollowTrailPheromone()
 		self.behvr_deficit_grab = Behvr_DeficitGrab(self.config['dirt'])
+		self.behvr_wall_grab = Behv_WallGrab(self.config['dirt'])
+		self.behvr_lay_digging_pheromone = Behvr_LayDiggingPheromone(self.config['beacons']['room']['id'])
 		self.coord_vecsum = Coord_VectorSum()
 		
 		# Debug/Testing variables
@@ -61,7 +63,28 @@ class AntRobot(robot.Robot):
 		local_world = self.sense(world)
 
 		# State transition management
-		if ( ( self.state == 0 or self.state == 4 ) and self.load >= self.config['max_load'] ):
+		if  ( self.detect_digging_pherom(world) ):
+			# reset impatience level on state switch
+			self.impatience = 0			
+			
+			self.prev_state = self.state
+			self.state = 5
+
+		if ( ( self.state == 0 or self.state == 4 ) and self.rect.center[1] > (self.SURFACE+2*self.config['body_range']) ):
+			# prob. transition to deficit digging
+			if ( self.state == 0 and rand.random() < 0.01 ):
+				self.behvr_deficit_grab.reset(local_world, self.rect.center[0], self.rect.center[1])
+				
+				self.prev_state = self.state
+				self.state = 4
+				
+			elif ( rand.random() < 0.002):
+				self.behvr_lay_digging_pheromone.action(local_world, self.rect.center[0], self.rect.center[1])
+				
+				self.prev_state = self.state
+				self.state = 5
+		
+		if ( ( self.state == 0 or self.state == 4  or self.state == 5 ) and self.load >= self.config['max_load'] ):
 
 			# reset impatience level on state switch
 			self.impatience = 0
@@ -97,15 +120,21 @@ class AntRobot(robot.Robot):
 
 		elif ( self.state == 3 and self.rect.center[1] > (self.SURFACE+2*self.config['body_range']) ):
 			# prob. transition to extension digging
-			if ( rand.random() < 0.05 ):
+			if ( rand.random() < 0.02 ):
 				self.prev_state = self.state
 				self.state = 0
 			# prob. transition to deficit digging
-			elif ( rand.random() < 0.05 ):
+			elif ( rand.random() < 0.01 ):
 				self.behvr_deficit_grab.reset(local_world, self.rect.center[0], self.rect.center[1])
 				
 				self.prev_state = self.state
 				self.state = 4
+			# prob. transition to chamber digging	
+			elif ( rand.random() < 0.002):
+				self.behvr_lay_digging_pheromone.action(local_world, self.rect.center[0], self.rect.center[1])
+				
+				self.prev_state = self.state
+				self.state = 5
 			# if patience has run out, flip coin to begin extension vs. deficit digging
 			elif ( self.impatience > self.IMPATIENCE_THRESH ):
 				# reset impatience level on state switch
@@ -127,39 +156,48 @@ class AntRobot(robot.Robot):
 			
 		# Gravity-biased tunnel digging (extension grabs)
 		if ( self.state == 0 ):
-
+			print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)	
+			move_fail_cnt = 0
 			while (True):
 				grav_action = self.behvr_follow_grav.action()
 				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
-				print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
+#				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)	
+#				print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
 				
 				action_list = np.concatenate(([grav_action], [rwalk_action]), 0)
-				gain_list = np.array([4, 3])
+				gain_list = np.array([3, 4])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+#				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 				
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
 				if ( not(valid_move) ):
+					move_fail_cnt += 1
 					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					if ( move_fail_cnt > 100 ):
+						break
 				else:
 					break
-			
+
+			print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+		
 			self.dig(world)
 		
 		# Navigate towards surface	
 		if ( self.state == 1 ):
-
+			print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)	
+			move_fail_cnt = 0
 			while ( True ):
 				surf_action = self.behvr_go_to_surf.action()
 				rwalk_action = self.behvr_random_walk.action(2, -2, 1, -1)
-				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)					
-				print 'AntRobot()::update - Surface Action: ' + str(surf_action) + ' R-Walk Action: ' + str(rwalk_action)
+#				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)					
+#				print 'AntRobot()::update - Surface Action: ' + str(surf_action) + ' R-Walk Action: ' + str(rwalk_action)
 				
 				# if last state was deficit digging below surface
 				if ( self.prev_state == 4 ):
 					rev_deficit_grab_action = -1*self.behvr_deficit_grab.action()
-					print ' Reverse-Deficit Grab Action: ' + str(rev_deficit_grab_action)					
+#					print ' Reverse-Deficit Grab Action: ' + str(rev_deficit_grab_action)					
 					
 					action_list = np.concatenate(([surf_action], [rwalk_action], [rev_deficit_grab_action]), 0)
 					gain_list = np.array([4, 6, 3])
@@ -169,25 +207,28 @@ class AntRobot(robot.Robot):
 					gain_list = np.array([6, 3])
 
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+#				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 				
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
 				if ( self.collision(world, robots) or not(valid_move) ):
-					if ( valid_move and self.impatience > self.IMPATIENCE_THRESH and rand.random() < 0.1):
+					move_fail_cnt += 1
+					if ( valid_move and self.impatience > self.IMPATIENCE_THRESH and rand.random() < 0.2):
 						self.dig(world)
 						break
 					else:
 						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+						if ( move_fail_cnt > 100 ):
+							break
 				else:
 					break
-				
-			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])
-				
+
+				print 'AntRobot()::update - Surface Action: ' + str(surf_action) + ' R-Walk Action: ' + str(rwalk_action)
+				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
 				
 		# Release transported dirt
 		if ( self.state == 2 ):
-	
+			print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)		
 			move_fail_cnt = 0
 			while ( True ):
 				rwalk_action = self.behvr_random_walk.action(0, 0, 2, -2)
@@ -196,14 +237,14 @@ class AntRobot(robot.Robot):
 					surf_bias_action = self.behvr_go_left.action()
 				else:
 					surf_bias_action = self.behvr_go_right.action()
-				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)		
-				print ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+#				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)		
+#				print ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
 				
 				action_list = np.concatenate(([rwalk_action], [surf_bias_action]), 0)
 				gain_list = np.array([2, 5])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
-								
+#				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
 				if ( self.collision(world, robots) or not(valid_move) ):
@@ -212,9 +253,14 @@ class AntRobot(robot.Robot):
 						self.dig(world)
 						break
 					else:
-						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)						
+						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)	
+						if ( move_fail_cnt > 100 ):
+							break
 				else:
 					break
+
+			print ' R-Walk Action: ' + str(rwalk_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 
 			self.behvr_lay_trail_pheromone.action(world, self.rect.center[0], self.rect.center[1])		
 			
@@ -222,15 +268,14 @@ class AntRobot(robot.Robot):
 			unload_dirt, dx, dy = self.behvr_unload_dirt.action(self.last_action)
 			print 'Unload Dirt: ' + str(unload_dirt) + ', dx = ' + str(dx) + ', dy = ' + str(dy)
 			if ( unload_dirt ):
-				self.unload(world, dx, dy)
+				self.unload(world, robots, dx, dy)
 		
 		# Follow/search for pheromones back to digging site
 		if ( self.state == 3 ):
-			local_world = self.sense(world)
-			
+			print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)	
 			move_fail_cnt = 0
 			while ( True ):
-				rwalk_action = self.behvr_random_walk.action(1, -1, 2, -2)
+				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
 				follow_pherom_action = self.behvr_follow_trail_pheromone.action(local_world, \
 					self.rect.center[0], self.rect.center[1], self.last_action)
 
@@ -240,23 +285,23 @@ class AntRobot(robot.Robot):
 						surf_bias_action = self.behvr_go_left.action()
 					else:
 						surf_bias_action = self.behvr_go_right.action()
-					print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)					
-					print ' R-Walk Action: ' + str(rwalk_action) + ' Follow Pherom. Action: ' + str(follow_pherom_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
+#					print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)					
+#					print ' R-Walk Action: ' + str(rwalk_action) + ' Follow Pherom. Action: ' + str(follow_pherom_action) + ' Surf. Bias Action: ' + str(surf_bias_action)
 					
 					action_list = np.concatenate(([rwalk_action], [follow_pherom_action], [surf_bias_action]), 0)
-					gain_list = np.array([6, 8, 3])
+					gain_list = np.array([2, 5, 4])
 					arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+#					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 
 				# pheromone trail following BELOW surface
 				else:
 					grav_action = self.behvr_follow_grav.action()
-					print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
+#					print 'AntRobot()::update - Gravity Action: ' + str(grav_action) + ' R-Walk Action: ' + str(rwalk_action)
 					
 					action_list = np.concatenate(([rwalk_action], [follow_pherom_action], [grav_action]), 0)
-					gain_list = np.array([2, 4, 4])
+					gain_list = np.array([2, 6, 3])
 					arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+#					print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 				
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
@@ -266,47 +311,89 @@ class AntRobot(robot.Robot):
 						self.dig(world)
 						break
 					else:
-						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)						
+						self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)	
+						if ( move_fail_cnt > 100 ):
+							break
 				else:
 					break
 
-#			if ( np.all( self.rect.center == self.last_pos ) ):
-#				self.impatience += 2
-#			elif ( self.impatience > 0 ):
-#				self.impatience -= 1
-#			print 'self.impatience = ' + str(self.impatience)
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 
 			self.last_action = arb_res			
 			self.last_pos = self.rect.center
 
 		# Gravity-invariant digging below surface (deficit grabs)
 		if ( self.state == 4 ):
-			local_world = self.sense(world)
+			print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)		
 			
+			move_fail_cnt = 0
 			while (True):
 				deficit_grab_action = self.behvr_deficit_grab.action()
 				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
-				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)					
-				print ' R-Walk Action: ' + str(rwalk_action) + ' Deficit Grab Action: ' + str(deficit_grab_action)					
+#				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)					
+#				print ' R-Walk Action: ' + str(rwalk_action) + ' Deficit Grab Action: ' + str(deficit_grab_action)					
 				
 				action_list = np.concatenate(([rwalk_action], [deficit_grab_action]), 0)
-				gain_list = np.array([2, 6])
+				gain_list = np.array([2, 8])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+#				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 				
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
 				if ( not(valid_move) or self.rect.center[1] <= (self.SURFACE+2*self.config['body_range']) ):
+					move_fail_cnt += 1
 					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					if ( move_fail_cnt > 100 ):
+						break
 				else:
 					break
+
+			print ' R-Walk Action: ' + str(rwalk_action) + ' Deficit Grab Action: ' + str(deficit_grab_action)					
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 			
 			self.dig(world)			
 			
-			self.last_action = arb_res			
+			self.last_action = arb_res
+			
+		# Random-walk chamber digging
+		if ( self.state == 5 ):
+			print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)	
+			move_fail_cnt = 0
+			while (True):
+				rwalk_action = self.behvr_random_walk.action(2, -2, 2, -2)
+				wall_grab_action = self.behvr_wall_grab.action(local_world, self.rect.center[0], self.rect.center[1])
+#				print 'AntRobot()::update - State: ' + str(self.state)  + ' ' + str(self)	
+#				print 'AntRobot()::update - Wall Grab Action: ' + str(wall_grab_action) + ' R-Walk Action: ' + str(rwalk_action)
+
+				action_list = np.concatenate(([wall_grab_action], [rwalk_action]), 0)
+				gain_list = np.array([8, 4])
+				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
+#				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+				
+				self.move(int(arb_res[0]), int(arb_res[1]), world)
+				valid_move = self.valid_pos(world, robots)
+				if ( not(valid_move) or self.rect.center[1] <= (self.SURFACE+2*self.config['body_range']) ):
+					move_fail_cnt += 1
+					self.move(int(-1*arb_res[0]), int(-1*arb_res[1]), world)
+					if ( move_fail_cnt > 100 ):
+						break
+				else:
+					break
+
+			print 'AntRobot()::update - Wall Grab Action: ' + str(wall_grab_action) + ' R-Walk Action: ' + str(rwalk_action)
+			print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+			
+			self.dig(world)
+
+
+	def detect_digging_pherom(self, world):
+		mask = self.getMask(world, self.config['sense_range'])
+		sensor_locale = world*mask
+		return ( np.any( sensor_locale == self.config['beacons']['room'] ) )
+
 
 	def update_impatience(self):
-		min_delta_pos = 6	
+		min_delta_pos = 10
 		
 		# historical position data to allow recognition of lack of progress
 		self.x_pos_hist.popleft()
@@ -329,17 +416,19 @@ class AntRobot(robot.Robot):
 		print 'self.impatience = ' + str(self.impatience)
 		
 	
-	def unload(self, world, dx, dy):
+	def unload(self, world,robots, dx, dy):
 		self.move(dx, dy, world)
+		drop_cnt = 0
 		
-		drop_mask = self.getMask(world, self.config['dig_range'])
-		drop_loc = np.asarray(np.where(drop_mask == 1))
-#		x, y = self.rect.center
-#		xx, yy = draw.circle(x, y, self.config['dig_range'], world.shape)
-#		drop_loc = np.concatenate(([xx], [yy]), 0)
-		drop_cnt = self.drop(world, drop_loc.T)
+		valid_move = self.valid_pos(world, robots)
+		if ( valid_move ):
+			drop_mask = self.getMask(world, self.config['dig_range'])
+			drop_loc = np.asarray(np.where(drop_mask == 1))
+			drop_cnt = self.drop(world, drop_loc.T)
+
 		self.move(-1*dx, -1*dy, world)
 		print 'Drop Count = ' + str(drop_cnt)	
+
 	
 	def valid_pos(self, world, robots):	
 		x_bound = world.shape[0]
@@ -349,7 +438,8 @@ class AntRobot(robot.Robot):
 		within_bounds = 	not( cur_pos[0] > x_bound-1-self.config['body_range'] \
 			or cur_pos[0] < self.config['body_range'] \
 			or cur_pos[1] > y_bound-1-self.config['body_range'] \
-			or cur_pos[1] < self.config['body_range'] )	
+			or cur_pos[1] < self.config['body_range'] )
+#		print 'valid_pos::within_bounds = ' + str(within_bounds)
 		
 		robot_collision = False
 		for robot in robots:
@@ -358,8 +448,10 @@ class AntRobot(robot.Robot):
 				if ( np.linalg.norm(dist) < 2*self.config['body_range'] ):
 					robot_collision = True
 					break
+#		print 'valid_pos::robot_collision = ' + str(robot_collision)
 
 		valid = not(robot_collision) and within_bounds
+#		print 'valid_pos::valid = ' + str(valid)
 			
 		return valid
 	
@@ -370,7 +462,7 @@ class AntRobot(robot.Robot):
 		
 								
 	def __str__(self):
-		return 'AntRobot: pos(x, y) = (%s, %s)'\
+		return 'AntRobot: id: ' + str(self.id) + ', pos(x, y) = (%s, %s)'\
 		% (self.rect.center[0], self.rect.center[1])
 
 
@@ -378,6 +470,30 @@ class AntRobot(robot.Robot):
 ##################################################
 ########### Behavior Class Definitions ########### 
 ##################################################
+class Behv_WallGrab():
+	""" Usage: Behv_ExpandWall(self.config['dirt']) """
+	def __init__(self, dirt_val):
+		self.dirt_val = dirt_val
+	
+	def action(self, local_world, x_pos, y_pos):
+		abs_dirt_loc = np.asarray(np.where(local_world == self.dirt_val))
+#		print 'abs_dirt_loc = ' + str(abs_dirt_loc)
+				
+		if ( abs_dirt_loc.size == 0 ):
+			vector_sum = np.array([rand.random(), rand.random()])
+		else:
+			rel_dirt_loc = abs_dirt_loc.T-np.array([x_pos, y_pos])
+			rel_dirt_loc = rel_dirt_loc.T
+#			print 'rel_dirt_loc = ' + str(rel_dirt_loc)
+			
+			vector_sum = np.sum(rel_dirt_loc, 1)
+		
+		# if vector norm != 0
+		if ( np.linalg.norm(vector_sum) > 0 ):		
+			vector_sum = vector_sum/np.linalg.norm(vector_sum)		
+
+		return vector_sum
+		
 
 class Behvr_DeficitGrab():
 	""" Usage: Behvr_DeficitGrab(self.config['dirt']) """
@@ -388,19 +504,18 @@ class Behvr_DeficitGrab():
 	def reset(self, local_world, x_pos, y_pos):
 		abs_dirt_loc = np.asarray(np.where(local_world == self.dirt_val))
 		print 'abs_dirt_loc = ' + str(abs_dirt_loc)
-				
-		if ( abs_dirt_loc.size == 0 ):
-			vector_sum = np.array([rand.random(), rand.random()])
-		else:
-			rel_dirt_loc = abs_dirt_loc.T-np.array([x_pos, y_pos])
-			rel_dirt_loc = rel_dirt_loc.T
-			print 'rel_dirt_loc = ' + str(rel_dirt_loc)
 			
-			vector_sum = np.sum(rel_dirt_loc, 1)
-		
+		rel_dirt_loc = abs_dirt_loc.T-np.array([x_pos, y_pos])
+		rel_dirt_loc = rel_dirt_loc.T
+		print 'rel_dirt_loc = ' + str(rel_dirt_loc)
+			
+		vector_sum = np.sum(rel_dirt_loc, 1)
+						
 		# if vector norm != 0
 		if ( np.linalg.norm(vector_sum) > 0 ):		
-			vector_sum = vector_sum/np.linalg.norm(vector_sum)		
+			vector_sum = vector_sum/np.linalg.norm(vector_sum)
+		else:
+			vector_sum = np.array([rand.random(), rand.random()])
 
 		self.direction = vector_sum
 	
@@ -415,8 +530,8 @@ class Behvr_FollowTrailPheromone():
 	
 	def action(self, local_world, x_pos, y_pos, last_action):
 		abs_pherom_loc = np.asarray(np.where(local_world > 0))
-		print 'abs_pherom_loc = ' + str(abs_pherom_loc)
-		print 'last_action = ' + str(last_action)
+#		print 'abs_pherom_loc = ' + str(abs_pherom_loc)
+#		print 'last_action = ' + str(last_action)
 		vector_sum = np.array([0, 0])
 
 		if ( last_action[0] > 0 ):
@@ -425,7 +540,7 @@ class Behvr_FollowTrailPheromone():
 			valid_x_region = np.asarray(np.where(abs_pherom_loc[0] < (x_pos+2)))
 		else:
 			valid_x_region = np.array(range(abs_pherom_loc[0].size))
-		print 'valid_x_region = ' + str(valid_x_region)
+#		print 'valid_x_region = ' + str(valid_x_region)
 			
 		if ( last_action[1] > 0 ):
 			valid_y_region = np.asarray(np.where(abs_pherom_loc[1] > (y_pos-2)))
@@ -433,37 +548,46 @@ class Behvr_FollowTrailPheromone():
 			valid_y_region = np.asarray(np.where(abs_pherom_loc[1] < (y_pos+2)))
 		else:
 			valid_y_region = np.array(range(abs_pherom_loc[1].size))
-		print 'valid_y_region = ' + str(valid_y_region)
+#		print 'valid_y_region = ' + str(valid_y_region)
 
 		valid_indices = np.intersect1d(valid_x_region, valid_y_region)
-		print 'valid_indices = ' + str(valid_indices)
+#		print 'valid_indices = ' + str(valid_indices)
 		if ( valid_indices.size != 0 ):
 			filtered_pherom_loc = abs_pherom_loc[:, valid_indices]
 					
 			rel_pherom_loc = filtered_pherom_loc.T-np.array([x_pos, y_pos])
 			rel_pherom_loc = rel_pherom_loc.T
 			pherom_val = local_world[filtered_pherom_loc[0].tolist(), filtered_pherom_loc[1].tolist()]
-			print 'rel_pherom_loc = ' + str(rel_pherom_loc)
-			print 'pherom_val = ' + str(pherom_val)
+#			print 'rel_pherom_loc = ' + str(rel_pherom_loc)
+#			print 'pherom_val = ' + str(pherom_val)
 			
 			vector_sum = np.dot(rel_pherom_loc, pherom_val)
-			print 'vector_sum (after dot prod) = ' + str(vector_sum)
+#			print 'vector_sum (after dot prod) = ' + str(vector_sum)
 
 			# if vector norm != 0
 			if ( np.linalg.norm(vector_sum) > 0 ):		
 				vector_sum = vector_sum/np.linalg.norm(vector_sum)	
-				print 'vector_sum (after norm) = ' + str(vector_sum)
+#				print 'vector_sum (after norm) = ' + str(vector_sum)
 
 		return vector_sum
 		
 
 class Behvr_LayTrailPheromone():
-	""" Usage: Behvr_LayTrailPheromone(1) """
+	""" Usage: Behvr_LayTrailPheromone(10) """
 	def __init__(self, intensity_inc):
 		self.intensity_inc = intensity_inc
 	
 	def action(self, world, x_pos, y_pos):
 		world[x_pos, y_pos] += self.intensity_inc
+
+
+class Behvr_LayDiggingPheromone():
+	""" Usage: Behvr_LayDiggingPheromone(self.config['pheromone']['room']) """
+	def __init__(self, digging_pherom_val):
+		self.digging_pherom_val = digging_pherom_val
+	
+	def action(self, world, x_pos, y_pos):
+		world[x_pos, y_pos] = self.digging_pherom_val
 		
 
 class Behvr_UnloadDirt():
@@ -486,7 +610,7 @@ class Behvr_UnloadDirt():
 		
 			dx = sign*(2*self.body_range)
 			
-			if ( rand.random() < 0.99 ):
+			if ( rand.random() < 0.995 ):
 				dy = 2*self.body_range
 			else:
 				dy = 0
