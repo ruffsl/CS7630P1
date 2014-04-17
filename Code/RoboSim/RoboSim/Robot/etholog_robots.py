@@ -174,7 +174,7 @@ class AntRobot(robot.Robot):
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
 				if ( self.collision(world, robots) or not(valid_move) ):
-					if ( valid_move and self.impatience > self.IMPATIENCE_THRESH and rand.random() < 0.1):
+					if ( valid_move and self.impatience > self.IMPATIENCE_THRESH and rand.random() < 0.2):
 						self.dig(world)
 						break
 					else:
@@ -202,8 +202,8 @@ class AntRobot(robot.Robot):
 				action_list = np.concatenate(([rwalk_action], [surf_bias_action]), 0)
 				gain_list = np.array([2, 5])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
-				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)				
-								
+				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
+
 				self.move(int(arb_res[0]), int(arb_res[1]), world)
 				valid_move = self.valid_pos(world, robots)
 				if ( self.collision(world, robots) or not(valid_move) ):
@@ -290,7 +290,7 @@ class AntRobot(robot.Robot):
 				print ' R-Walk Action: ' + str(rwalk_action) + ' Deficit Grab Action: ' + str(deficit_grab_action)					
 				
 				action_list = np.concatenate(([rwalk_action], [deficit_grab_action]), 0)
-				gain_list = np.array([2, 6])
+				gain_list = np.array([4, 6])
 				arb_res = self.coord_vecsum.coord(action_list.T, gain_list)
 				print 'AntRobot()::update - Arbitrated Action: ' + str(arb_res)
 				
@@ -349,7 +349,8 @@ class AntRobot(robot.Robot):
 		within_bounds = 	not( cur_pos[0] > x_bound-1-self.config['body_range'] \
 			or cur_pos[0] < self.config['body_range'] \
 			or cur_pos[1] > y_bound-1-self.config['body_range'] \
-			or cur_pos[1] < self.config['body_range'] )	
+			or cur_pos[1] < self.config['body_range'] )
+		print 'valid_pos::within_bounds = ' + str(within_bounds)
 		
 		robot_collision = False
 		for robot in robots:
@@ -358,8 +359,10 @@ class AntRobot(robot.Robot):
 				if ( np.linalg.norm(dist) < 2*self.config['body_range'] ):
 					robot_collision = True
 					break
+		print 'valid_pos::robot_collision = ' + str(robot_collision)
 
 		valid = not(robot_collision) and within_bounds
+		print 'valid_pos::valid = ' + str(valid)
 			
 		return valid
 	
@@ -370,7 +373,7 @@ class AntRobot(robot.Robot):
 		
 								
 	def __str__(self):
-		return 'AntRobot: pos(x, y) = (%s, %s)'\
+		return 'AntRobot: id: ' + str(self.id) + ', pos(x, y) = (%s, %s)'\
 		% (self.rect.center[0], self.rect.center[1])
 
 
@@ -415,8 +418,8 @@ class Behvr_FollowTrailPheromone():
 	
 	def action(self, local_world, x_pos, y_pos, last_action):
 		abs_pherom_loc = np.asarray(np.where(local_world > 0))
-		print 'abs_pherom_loc = ' + str(abs_pherom_loc)
-		print 'last_action = ' + str(last_action)
+#		print 'abs_pherom_loc = ' + str(abs_pherom_loc)
+#		print 'last_action = ' + str(last_action)
 		vector_sum = np.array([0, 0])
 
 		if ( last_action[0] > 0 ):
@@ -425,7 +428,7 @@ class Behvr_FollowTrailPheromone():
 			valid_x_region = np.asarray(np.where(abs_pherom_loc[0] < (x_pos+2)))
 		else:
 			valid_x_region = np.array(range(abs_pherom_loc[0].size))
-		print 'valid_x_region = ' + str(valid_x_region)
+#		print 'valid_x_region = ' + str(valid_x_region)
 			
 		if ( last_action[1] > 0 ):
 			valid_y_region = np.asarray(np.where(abs_pherom_loc[1] > (y_pos-2)))
@@ -433,26 +436,26 @@ class Behvr_FollowTrailPheromone():
 			valid_y_region = np.asarray(np.where(abs_pherom_loc[1] < (y_pos+2)))
 		else:
 			valid_y_region = np.array(range(abs_pherom_loc[1].size))
-		print 'valid_y_region = ' + str(valid_y_region)
+#		print 'valid_y_region = ' + str(valid_y_region)
 
 		valid_indices = np.intersect1d(valid_x_region, valid_y_region)
-		print 'valid_indices = ' + str(valid_indices)
+#		print 'valid_indices = ' + str(valid_indices)
 		if ( valid_indices.size != 0 ):
 			filtered_pherom_loc = abs_pherom_loc[:, valid_indices]
 					
 			rel_pherom_loc = filtered_pherom_loc.T-np.array([x_pos, y_pos])
 			rel_pherom_loc = rel_pherom_loc.T
 			pherom_val = local_world[filtered_pherom_loc[0].tolist(), filtered_pherom_loc[1].tolist()]
-			print 'rel_pherom_loc = ' + str(rel_pherom_loc)
-			print 'pherom_val = ' + str(pherom_val)
+#			print 'rel_pherom_loc = ' + str(rel_pherom_loc)
+#			print 'pherom_val = ' + str(pherom_val)
 			
 			vector_sum = np.dot(rel_pherom_loc, pherom_val)
-			print 'vector_sum (after dot prod) = ' + str(vector_sum)
+#			print 'vector_sum (after dot prod) = ' + str(vector_sum)
 
 			# if vector norm != 0
 			if ( np.linalg.norm(vector_sum) > 0 ):		
 				vector_sum = vector_sum/np.linalg.norm(vector_sum)	
-				print 'vector_sum (after norm) = ' + str(vector_sum)
+#				print 'vector_sum (after norm) = ' + str(vector_sum)
 
 		return vector_sum
 		

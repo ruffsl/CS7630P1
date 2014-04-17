@@ -132,9 +132,11 @@ class sim:
 
 	def decay(self, flags):
 		if not (self.it % self.config['half_life']):
-			pheromones = np.where(self.world > 0)
-			if(pheromones[0].size):
-				pheromone_values = int(self.world[pheromones]*(0.5))
+			pheromones = np.asarray(np.where(self.world > 0))
+			if (pheromones[0].size):
+				print 'pheromones = ' + str(pheromones)
+				print 'self.world[pheromones] = ' + str(self.world[pheromones])
+				pheromone_values = np.floor(self.world[pheromones]*(0.5))
 				self.world[pheromones] = pheromone_values
 
 	def update(self, flags):

@@ -51,8 +51,10 @@ def trial(mode):
 #	myRobot = robot.Robot((500,500), config)
 #	myRobot = exper_robot.exper_robot((250,195), config, 0)
 	if mode == 'etholog':
-		myRobot = etholog_robots.AntRobot((250,195), config)
-		robots = [myRobot]
+		myRobot1 = etholog_robots.AntRobot((200,195), config)
+		myRobot2 = etholog_robots.AntRobot((250,195), config)
+		myRobot3 = etholog_robots.AntRobot((300,195), config)
+		robots = [myRobot1, myRobot2, myRobot3]
 	elif mode == 'exper':
 		myRobot = exper_robot.exper_robot((250,195), config, 0)
 		robots = [myRobot]
@@ -81,8 +83,8 @@ def to_file(data, i, mode, tag):
 	df.to_csv(path + file_name, index=False)
 	
 def main():
-#	mode = 'etholog'
-	mode = 'exper'
+	mode = 'etholog'
+#	mode = 'exper'
 	tag = ''
 	for i in range(10):
 		data = trial(mode)
