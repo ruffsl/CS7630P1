@@ -58,7 +58,7 @@ class exper_robot(robot.Robot):
 		elif self.state == 1:
 			self.dig_tunnel(world)
 		elif self.state == 2:
-			self.unload_dirt(world)
+			self.unload_dirt(world, robots)
 		elif self.state == 3:
 			self.explore(world)
 		elif self.state == 4:
@@ -70,7 +70,12 @@ class exper_robot(robot.Robot):
 	def start(self, world):
 		if self.start_state == 0:
 			self.state = 1
-		else:
+		elif self.start_state == 1:
+			self.wall_follow_state = -self.start_state
+			self.wall_follow(0,world)
+			if self.rect.center[1] >= self.SURFACE+5:
+				self.state = 3
+		elif self.start_state == -1:
 			self.wall_follow_state = -self.start_state
 			self.wall_follow(0,world)
 			if self.rect.center[1] >= self.SURFACE+5:
@@ -126,11 +131,11 @@ class exper_robot(robot.Robot):
 
 		beacons = self.sense_beacon(self.DIGCOIN, 1, world)
 		if len(beacons[0]) >= 1:		#Found tunnel beacon
-			if noise > 700:
+			if noise > 600:
 				print 'laying branch'
 				self.lay_beacon(self.BRANCH, world)
 				self.state = 1
-			elif noise < 200:
+			elif noise < 300:
 				print 'Starting room'
 				self.lay_beacon(self.ROOM, world)
 				self.dig_room_state = 0
@@ -148,8 +153,10 @@ class exper_robot(robot.Robot):
 			
 		if self.explore_state == 0:
 			if noise < 300:
+				self.wall_follow_state = -1
 				self.explore_state = 1
 			elif noise >= 300 and noise < 600:
+				self.wall_follow_state = 1
 				self.explore_state = 2
 			elif noise >= 600 and noise < 800:
 				self.explore_state = 3
@@ -162,25 +169,27 @@ class exper_robot(robot.Robot):
 				self.explore_state = 0
 			
 		if self.explore_state == 1:	#Wall follow down left priority
-			if self.touch[4] == 0:
-				self.move(0,1,world)
-				self.x_dir = -1
-			elif self.touch[6] == 0:
-				self.move(-1,0,world)
-				self.x_dir = -1
-			elif self.touch[2] == 0:
-				self.move(1,0,world)
-				self.x_dir = 1
+			self.wall_follow(0,world)
+#			if self.touch[4] == 0:
+#				self.move(0,1,world)
+#				self.x_dir = -1
+#			elif self.touch[6] == 0:
+#				self.move(-1,0,world)
+#				self.x_dir = -1
+#			elif self.touch[2] == 0:
+#				self.move(1,0,world)
+#				self.x_dir = 1
 		elif self.explore_state == 2:	#Wall follow down right priority
-			if self.touch[4] == 0:
-				self.move(0,1,world)
-				self.x_dir = 1
-			elif self.touch[2] == 0:
-				self.move(1,0,world)
-				self.x_dir = 1
-			elif self.touch[6] == 0:
-				self.move(-1,0,world)
-				self.x_dir = -1
+			self.wall_follow(0,world)
+#			if self.touch[4] == 0:
+#				self.move(0,1,world)
+#				self.x_dir = 1
+#			elif self.touch[2] == 0:
+#				self.move(1,0,world)
+#				self.x_dir = 1
+#			elif self.touch[6] == 0:
+#				self.move(-1,0,world)
+#				self.x_dir = -1
 		elif self.explore_state == 3:	#Wall follow left priority
 			if self.touch[6] == 0:
 				self.move(-1,0,world)
@@ -188,6 +197,8 @@ class exper_robot(robot.Robot):
 			elif self.touch[4] == 0:
 				self.move(0,1,world)
 				self.x_dir = -1
+			else:
+				self.explore_state = 0
 		elif self.explore_state == 4:	#Wall follow right priority
 			if self.touch[2] == 0:
 				self.move(1,0,world)
@@ -195,6 +206,8 @@ class exper_robot(robot.Robot):
 			elif self.touch[4] == 0:
 				self.move(0,1,world)
 				self.x_dir = 1
+			else:
+				self.explore_state = 0
 	
 	def dig_tunnel(self,world):
 		if self.load > self.config['max_load']:
@@ -214,7 +227,9 @@ class exper_robot(robot.Robot):
 			elif self.x_dir < -1:
 				self.x_dir = -1
 			self.y_dir = random.randint(0,1)
-			self.y_dir = 1
+			if self.y_dir == -1:
+				self.y_dir = 1
+#			self.y_dir = 1
 			if self.x_dir == 0 and self.y_dir == 0:
 				self.dig_state = 0
 			else:
@@ -251,7 +266,7 @@ class exper_robot(robot.Robot):
 		if self.load > self.config['max_load']:
 			self.state = 5		#escape
 		elif self.dig_room_state == 0:		#choose size
-			self.room_size = random.randint(20,55)
+			self.room_size = random.randint(20,40)
 			self.dig_room_state = 1
 		elif self.dig_room_state == 1:		#first wall
 			if self.room_size > self.wall_length:
@@ -338,8 +353,9 @@ class exper_robot(robot.Robot):
 				
 		elif self.dig_room_state == 8:		#clear out dirt
 			if self.wall_length >= self.room_size:
-				self.lay_beacon(self.DIGCOIN, world)
+				self.lay_beacon(self.BRANCH, world)
 				self.dig_room_state = 9
+				self.wall_length = 0
 			elif self.touch[0] == 1:
 				self.move(0,-1,world)
 				self.dig(world)
@@ -356,13 +372,15 @@ class exper_robot(robot.Robot):
 				self.wall_length = self.wall_length+1
 				
 		elif self.dig_room_state == 9:
-			beacons = self.sense_beacon(self.BRANCH, 1, world)
+			beacons = self.sense_beacon(self.ROOM, 1, world)
 			if len(beacons[0]) >= 1:		#Found exit
 				self.state = 3			#explore
 			elif self.touch[0] == 0:
 				self.move(0,-1,world)
 			elif self.touch[4-2*self.x_dir] == 0:
 				self.move(-self.x_dir,0,world)
+			else:						#beacon all ready taken
+				self.state = 3
 			
 	def escape_room(self,world):
 		beacons = self.sense_beacon(self.ROOM, 0, world)
@@ -409,7 +427,7 @@ class exper_robot(robot.Robot):
 					else:
 						self.escape_state = 2
 				
-	def unload_dirt(self,world):
+	def unload_dirt(self,world, robots):
 #		print 'Sense:', self.touch, 'State:', self.unload_state
 		if self.unload_state == 0:
 			if self.rect.center[1] < self.SURFACE+10:
@@ -426,16 +444,17 @@ class exper_robot(robot.Robot):
 				self.unload_state = 2
 		elif self.unload_state == 2:				#Go to surface
 #			print self.touch[6]
-			if self.touch[7] == 1 and self.touch[3] == 1:
-				self.move(0,-1,world)
-			elif self.touch[7] == 0:
-				self.side = -1
-				self.move(-1,0,world)
-				self.unload_state = 3
-			elif self.touch[3] == 0:
-				self.side = 1
-				self.move(1,0,world)
-				self.unload_state = 3
+			if self.check_robots(world, robots) == False:
+				if self.touch[7] == 1 and self.touch[3] == 1:
+					self.move(0,-1,world)
+				elif self.touch[7] == 0:
+					self.side = -1
+					self.move(-1,0,world)
+					self.unload_state = 3
+				elif self.touch[3] == 0:
+					self.side = 1
+					self.move(1,0,world)
+					self.unload_state = 3
 		elif self.unload_state == 3:				#Move on top
 #			print 'bottom = ', self.touch[5]
 			if self.touch[5] == 0:
@@ -477,6 +496,12 @@ class exper_robot(robot.Robot):
 				self.unload_state = 10
 				self.wall_follow_state = -self.side # set priority
 		elif self.unload_state == 10:
+			for robot in robots:
+				if robot.state ==2 and robot.unload_state > 3 and robot.unload_state < 10:
+					if robot.rect.center[0] - self.rect.center[0] < 6 and robot.rect.center[0] - self.rect.center[0] > -6:
+						self.move(0,-1,world)
+						return
+			self.wall_follow_state = -self.side # set priority
 			self.wall_follow(0,world)		#anything not 1 goes down
 			if self.rect.center[1] > self.SURFACE + 10:		#back in tunnel
 				self.unload_state = 0		#Reset unload
@@ -493,7 +518,13 @@ class exper_robot(robot.Robot):
 		if remove:
 			world[beacons] = self.config['empty']
 		#print 'beacons: ', beacons[0], beacons[0].shape
-		return beacons			
+		return beacons
+		
+	def check_robots(self, world, robots):
+		for robot in robots:
+			if (robot.state ==2 and robot.unload_state == 3 and robot.rect.center[1] < self.rect.center[1]):
+				return True
+		return False
 			
 	def vision_2_feel(self, world):
 		#Top -> 0

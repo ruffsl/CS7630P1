@@ -6,10 +6,11 @@ Created on Mon Mar 17 17:26:09 2014
 """
 
 tunnel 	= {'color': [255,140,0,255], 'id': -4}
-room 		= {'color': [0,255,255,255], 'id': -5}
+room 	= {'color': [0,255,255,255], 'id': -5}
+branch 	= {'color': [240,150,240,255], 'id': -6}
 pheromone = {'color': [255,140,0,255], 'id': 0}
 
-beacons = {'tunnel': tunnel, 'room': room}
+beacons = {'tunnel': tunnel, 'room': room, 'branch': branch}
 
 config = {'fps': 200,
 			'b_image'	: 	'background_500.png',
@@ -57,7 +58,16 @@ def trial(mode):
 		robots = [myRobot1, myRobot2, myRobot3]
 	elif mode == 'exper':
 		myRobot = exper_robot.exper_robot((250,195), config, 0)
-		robots = [myRobot]
+		myRobot2 = exper_robot.exper_robot((270,195), config, 1)
+		myRobot3 = exper_robot.exper_robot((210,195), config, -1)
+		myRobot4 = exper_robot.exper_robot((310,195), config, 1)
+		myRobot5 = exper_robot.exper_robot((320,195), config, 1)
+#		myRobot = exper_robot.exper_robot((450,395), config, 0)
+#		myRobot2 = exper_robot.exper_robot((470,395), config, 1)
+#		myRobot3 = exper_robot.exper_robot((410,395), config, -1)
+#		myRobot4 = exper_robot.exper_robot((510,395), config, 1)
+#		myRobot5 = exper_robot.exper_robot((520,395), config, 1)
+		robots = [myRobot, myRobot2, myRobot3, myRobot4, myRobot5]
 	# Init simulation with robots
 	mainSim = sim.sim(robots, config)
 	
@@ -83,12 +93,12 @@ def to_file(data, i, mode, tag):
 	df.to_csv(path + file_name, index=False)
 	
 def main():
-	mode = 'etholog'
-#	mode = 'exper'
+#	mode = 'etholog'
+	mode = 'exper'
 	tag = ''
-	for i in range(10):
+	for i in range(1):
 		data = trial(mode)
-		to_file(data, i, mode, tag)
+#		to_file(data, i, mode, tag)
 	
 
 if __name__ == '__main__':
